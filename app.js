@@ -41,7 +41,10 @@ function locate() {
   if (!ensureKey() || !navigator.geolocation) return;
   setLoading(true,"正在取得你的位置…");
   navigator.geolocation.getCurrentPosition(
-    ({coords}) => fetchWeather({ lat:coords.latitude, lon:coords.longitude }),
+    ({coords}) => {
+      els.weatherEmpty.hidden=true;
+      fetchWeather({ lat:coords.latitude, lon:coords.longitude });
+    },
     () => { setLoading(false,"無法取得位置，請改用城市搜尋。"); },
     { enableHighAccuracy:false, timeout:10000, maximumAge:600000 }
   );
