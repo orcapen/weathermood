@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#132f2d" />
+    <meta name="description" content="把每天的天氣與心情放在一起，找出你的生活節奏。" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>WeatherMood 天氣心情誌</title>
+  </head>
+  <body>
+    <div class="sky-glow" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="WeatherMood 首頁">
+        <span class="brand-mark">W</span>
+        <span>WeatherMood</span>
+      </a>
+      <div class="header-actions">
+        <span id="offlineBadge" class="offline-badge" hidden>離線中</span>
+        <button id="installButton" class="button ghost" hidden>安裝 App</button>
+        <button id="settingsButton" class="icon-button" aria-label="設定 OpenWeatherMap API key">⚙</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">YOUR DAILY WEATHER JOURNAL</p>
+          <h1>今天，感覺如何？</h1>
+          <p class="hero-copy">記下天空，也記下自己。久而久之，你會看見天氣與心情之間的小小線索。</p>
+        </div>
+        <div class="date-chip">
+          <span id="todayWeekday"></span>
+          <strong id="todayDate"></strong>
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="card weather-card">
+          <div class="card-heading">
+            <div>
+              <p class="section-label">現在的天氣</p>
+              <h2 id="locationName">尚未取得位置</h2>
+            </div>
+            <button id="refreshWeather" class="round-button" aria-label="重新取得天氣" title="重新取得天氣">↻</button>
+          </div>
+
+          <div id="weatherEmpty" class="weather-empty">
+            <div class="empty-weather-icon">◌</div>
+            <p>允許定位，或搜尋一座城市</p>
+            <button id="locateButton" class="button primary">使用我的位置</button>
+          </div>
+
+          <div id="weatherContent" hidden>
+            <div class="weather-primary">
+              <div>
+                <span id="temperature" class="temperature">--°</span>
+                <p id="weatherDescription" class="weather-description">—</p>
+              </div>
+              <img id="weatherIcon" class="weather-icon" alt="" />
+            </div>
+            <div class="metrics">
+              <div class="metric"><span class="metric-icon">◒</span><div><small>濕度</small><strong id="humidity">--%</strong></div></div>
+              <div class="metric"><span class="metric-icon">↥</span><div><small>氣壓</small><strong id="pressure">-- hPa</strong></div></div>
+              <div class="metric"><span class="metric-icon">☁</span><div><small>雲量</small><strong id="cloudiness">--%</strong></div></div>
+            </div>
+          </div>
+
+          <form id="cityForm" class="city-search">
+            <label class="sr-only" for="cityInput">搜尋城市</label>
+            <input id="cityInput" autocomplete="address-level2" placeholder="輸入城市，例如 Taipei" />
+            <button class="button secondary" type="submit">搜尋</button>
+          </form>
+          <p id="weatherStatus" class="status" role="status"></p>
+        </article>
+
+        <article class="card mood-card">
+          <div class="card-heading">
+            <div>
+              <p class="section-label">心情打卡</p>
+              <h2>此刻的心情</h2>
+            </div>
+            <span class="step-pill">1–5</span>
+          </div>
+          <form id="moodForm">
+            <fieldset class="mood-scale">
+              <legend class="sr-only">選擇一到五分的心情</legend>
+              <label><input type="radio" name="mood" value="1" required /><span class="mood-face">😞</span><small>很低落</small></label>
+              <label><input type="radio" name="mood" value="2" /><span class="mood-face">🙁</span><small>不太好</small></label>
+              <label><input type="radio" name="mood" value="3" /><span class="mood-face">😐</span><small>普通</small></label>
+              <label><input type="radio" name="mood" value="4" /><span class="mood-face">🙂</span><small>不錯</small></label>
+              <label><input type="radio" name="mood" value="5" /><span class="mood-face">😄</span><small>很好</small></label>
+            </fieldset>
+            <label class="note-label" for="note">留一句給今天的自己 <span>選填</span></label>
+            <textarea id="note" maxlength="180" rows="3" placeholder="今天發生了什麼事？"></textarea>
+            <div class="form-footer">
+              <span id="saveStatus" class="status" role="status"></span>
+              <button class="button primary save-button" type="submit">儲存今日紀錄</button>
+            </div>
+          </form>
+        </article>
+      </section>
+
+      <section class="history-section">
+        <div class="section-header">
+          <div><p class="section-label">過去的足跡</p><h2>最近紀錄</h2></div>
+          <div class="history-actions">
+            <button id="exportCsv" class="button ghost" hidden>匯出 CSV</button>
+            <button id="clearRecords" class="text-button" hidden>清除全部</button>
+          </div>
+        </div>
+        <div id="insight" class="insight" hidden></div>
+        <div id="recordList" class="record-list"></div>
+        <div id="recordsEmpty" class="records-empty">
+          <span>✦</span>
+          <h3>還沒有紀錄</h3>
+          <p>完成第一次心情打卡後，紀錄會出現在這裡。</p>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog">
+      <form id="settingsForm" method="dialog" class="settings-panel">
+        <div class="dialog-heading"><div><p class="section-label">連線設定</p><h2>OpenWeatherMap</h2></div><button class="icon-button" value="cancel" aria-label="關閉">×</button></div>
+        <p>請輸入你的 API key。金鑰只會儲存在這個瀏覽器，不會傳到其他伺服器。</p>
+        <label for="apiKey">API key</label>
+        <input id="apiKey" type="password" autocomplete="off" placeholder="貼上 API key" />
+        <small>這是純前端 PWA，瀏覽器請求中仍可看見 key；正式公開服務建議改由後端代理。</small>
+        <div class="dialog-actions"><button class="button ghost" value="cancel">取消</button><button id="saveSettings" class="button primary" value="default">儲存設定</button></div>
+      </form>
+    </dialog>
+
+    <template id="recordTemplate">
+      <article class="record-item">
+        <div class="record-date"><strong></strong><span></span></div>
+        <div class="record-weather"><span class="mini-weather"></span><div><strong></strong><span></span></div></div>
+        <div class="record-mood"><span></span><div><strong></strong><small></small></div></div>
+        <p class="record-note"></p>
+        <button class="delete-record icon-button" aria-label="刪除紀錄">×</button>
+      </article>
+    </template>
+    <script src="app.js" defer></script>
+  </body>
+</html>

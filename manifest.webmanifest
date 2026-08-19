@@ -1,0 +1,12 @@
+{
+  "name": "WeatherMood 天氣心情誌",
+  "short_name": "WeatherMood",
+  "description": "記錄天氣與每日心情，找出生活的節奏。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf4ee",
+  "theme_color": "#132f2d",
+  "lang": "zh-Hant",
+  "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
