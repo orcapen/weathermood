@@ -111,6 +111,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .history-controls label { color: var(--muted); font-size: .8rem; }
 .history-controls select { display: block; margin-top: 6px; padding: 9px 34px 9px 12px; }
 .date-filter-control { color: var(--muted); font-size: .8rem; }
+.export-date-range { margin-top: 20px; color: var(--muted); font-size: .84rem; font-weight: 700; }
+.export-date-range .date-range-trigger { width: 100%; font-weight: 400; }
+.export-date-range .date-range-summary { font-weight: 400; }
 .date-range-trigger { display: flex; gap: 16px; justify-content: space-between; align-items: center; min-width: 230px; min-height: 40px; margin-top: 6px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
 .date-range-trigger:hover { border-color: var(--accent); }
 .date-range-summary { max-width: 300px; margin: 6px 0 0; color: var(--accent-dark); font-size: .78rem; }
@@ -132,7 +135,6 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .modal-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 22px; border-radius: 50%; background: #fae8dc; color: var(--accent); font-size: 1.7rem; }
 .input-field { display: block; margin-top: 20px; color: var(--muted); font-size: .84rem; font-weight: 700; }
 .input-field input { width: 100%; margin-top: 7px; padding: 12px 13px; }
-.date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-error { min-height: 20px; margin: 8px 0 0; color: #b13c27 !important; font-size: .8rem; }
 .date-picker-modal { width: min(430px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
 .date-picker-panel { position: relative; padding: 32px; }
@@ -186,7 +188,6 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
   .entry-meta { grid-column: 2; text-align: left; }
   .modal form { padding: 32px 24px 26px; }
   .date-picker-panel { padding: 28px 20px 22px; }
-  .date-range { grid-template-columns: 1fr; gap: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

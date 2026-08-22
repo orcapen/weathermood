@@ -9,14 +9,9 @@ const state = {
   position: null,
   selectedMood: null,
   entries: readEntries(),
-  dateRange: {
-    start: "",
-    end: "",
-    appliedStart: "",
-    appliedEnd: "",
-    selecting: "start",
-    viewDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-  },
+  dateRange: createDateRangeState(),
+  exportDateRange: createDateRangeState(),
+  dateRangeContext: "history",
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -107,7 +102,8 @@ function bindEvents() {
   $("#closeExportDialog").addEventListener("click", () => $("#exportDialog").close());
   $("#exportForm").addEventListener("submit", exportCsv);
   $("#moodFilter").addEventListener("change", renderHistory);
-  $("#openDateRange").addEventListener("click", openDateRangePicker);
+  $("#openDateRange").addEventListener("click", () => openDateRangePicker("history"));
+  $("#openExportDateRange").addEventListener("click", () => openDateRangePicker("export"));
   $("#closeDateRange").addEventListener("click", () => $("#dateRangeDialog").close());
   $("#previousMonth").addEventListener("click", () => changeCalendarMonth(-1));
   $("#nextMonth").addEventListener("click", () => changeCalendarMonth(1));
@@ -369,10 +365,24 @@ function renderHistory() {
     : "每一天，都是值得收藏的天氣。";
 }
 
-function openDateRangePicker() {
-  const anchor = state.dateRange.start || state.dateRange.appliedStart || toLocalDate(new Date());
-  state.dateRange.viewDate = parseLocalDate(anchor);
-  state.dateRange.viewDate.setDate(1);
+function createDateRangeState() {
+  return {
+    start: "", end: "", appliedStart: "", appliedEnd: "", selecting: "start",
+    viewDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  };
+}
+
+function activeDateRange() {
+  return state.dateRangeContext === "export" ? state.exportDateRange : state.dateRange;
+}
+
+function openDateRangePicker(context) {
+  state.dateRangeContext = context;
+  const range = activeDateRange();
+  const anchor = range.start || range.appliedStart || toLocalDate(new Date());
+  range.viewDate = parseLocalDate(anchor);
+  range.viewDate.setDate(1);
+  $("#dateRangeTitle").textContent = context === "export" ? "選擇匯出日期區間" : "選擇日期區間";
   renderDateRangePicker();
   $("#dateRangeDialog").showModal();
   requestAnimationFrame(() => {
@@ -382,7 +392,7 @@ function openDateRangePicker() {
 }
 
 function renderDateRangePicker(focusDate = "") {
-  const { start, end, selecting, viewDate } = state.dateRange;
+  const { start, end, selecting, viewDate } = activeDateRange();
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const firstWeekday = new Date(year, month, 1).getDay();
@@ -421,7 +431,7 @@ function handleCalendarClick(event) {
 }
 
 function selectRangeDate(date) {
-  const range = state.dateRange;
+  const range = activeDateRange();
   if (range.selecting === "start" || range.selecting === "complete") {
     range.start = date;
     range.end = "";
@@ -441,7 +451,7 @@ function selectRangeDate(date) {
 }
 
 function updateDateSelection() {
-  const { start, end } = state.dateRange;
+  const { start, end } = activeDateRange();
   if (!start) {
     $("#dateSelection").innerHTML = "尚未選擇日期。";
     return;
@@ -450,23 +460,27 @@ function updateDateSelection() {
   $("#dateSelection").innerHTML = `<strong>${formatShortDate(start)} → ${end ? formatShortDate(end) : "請選擇結束日"}</strong>${duration ? `共 ${duration} 天（包含開始與結束日）` : ""}`;
 }
 
-function updateAppliedDateRange() {
-  const { appliedStart, appliedEnd } = state.dateRange;
+function updateAppliedDateRange(context = state.dateRangeContext) {
+  const range = context === "export" ? state.exportDateRange : state.dateRange;
+  const { appliedStart, appliedEnd } = range;
+  const label = context === "export" ? $("#exportDateRangeLabel") : $("#dateRangeLabel");
+  const summary = context === "export" ? $("#exportDateRangeSummary") : $("#dateRangeSummary");
   if (!appliedStart || !appliedEnd) {
-    $("#dateRangeLabel").textContent = "選擇日期區間";
-    $("#dateRangeSummary").textContent = "";
+    label.textContent = context === "export" ? "全部日期" : "選擇日期區間";
+    summary.textContent = context === "export" ? "未選擇區間時將匯出全部紀錄。" : "";
     return;
   }
   const duration = inclusiveDays(appliedStart, appliedEnd);
-  $("#dateRangeLabel").textContent = `${formatShortDate(appliedStart)} – ${formatShortDate(appliedEnd)}`;
-  $("#dateRangeSummary").textContent = `開始 ${formatLongDate(appliedStart)}・結束 ${formatLongDate(appliedEnd)}・共 ${duration} 天`;
+  label.textContent = `${formatShortDate(appliedStart)} – ${formatShortDate(appliedEnd)}`;
+  summary.textContent = `開始 ${formatLongDate(appliedStart)}・結束 ${formatLongDate(appliedEnd)}・共 ${duration} 天`;
 }
 
 function restartDateRange() {
-  state.dateRange.start = "";
-  state.dateRange.end = "";
-  state.dateRange.selecting = "start";
-  state.dateRange.viewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const range = activeDateRange();
+  range.start = "";
+  range.end = "";
+  range.selecting = "start";
+  range.viewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   $("#datePickerError").textContent = "";
   renderDateRangePicker();
   $(".calendar-day.today")?.focus();
@@ -474,28 +488,30 @@ function restartDateRange() {
 
 function clearDateRange() {
   restartDateRange();
-  state.dateRange.appliedStart = "";
-  state.dateRange.appliedEnd = "";
+  const range = activeDateRange();
+  range.appliedStart = "";
+  range.appliedEnd = "";
   updateAppliedDateRange();
-  renderHistory();
+  if (state.dateRangeContext === "history") renderHistory();
 }
 
 function confirmDateRange() {
-  const range = state.dateRange;
+  const range = activeDateRange();
   if (!range.start || !range.end || range.end < range.start) return;
   range.appliedStart = range.start;
   range.appliedEnd = range.end;
   updateAppliedDateRange();
-  renderHistory();
+  if (state.dateRangeContext === "history") renderHistory();
   $("#dateRangeDialog").close();
-  $("#openDateRange").focus();
+  $(state.dateRangeContext === "export" ? "#openExportDateRange" : "#openDateRange").focus();
 }
 
 function changeCalendarMonth(offset, focusDay = 1) {
-  const current = state.dateRange.viewDate;
-  state.dateRange.viewDate = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-  const maxDay = new Date(state.dateRange.viewDate.getFullYear(), state.dateRange.viewDate.getMonth() + 1, 0).getDate();
-  const focusDate = toLocalDate(new Date(state.dateRange.viewDate.getFullYear(), state.dateRange.viewDate.getMonth(), Math.min(focusDay, maxDay)));
+  const range = activeDateRange();
+  const current = range.viewDate;
+  range.viewDate = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+  const maxDay = new Date(range.viewDate.getFullYear(), range.viewDate.getMonth() + 1, 0).getDate();
+  const focusDate = toLocalDate(new Date(range.viewDate.getFullYear(), range.viewDate.getMonth(), Math.min(focusDay, maxDay)));
   renderDateRangePicker(focusDate);
   requestAnimationFrame(() => $( `[data-date="${focusDate}"]` )?.focus());
 }
@@ -520,8 +536,9 @@ function handleCalendarKeydown(event) {
   }
   event.preventDefault();
   const targetDate = toLocalDate(target);
-  if (target.getMonth() !== state.dateRange.viewDate.getMonth() || target.getFullYear() !== state.dateRange.viewDate.getFullYear()) {
-    state.dateRange.viewDate = new Date(target.getFullYear(), target.getMonth(), 1);
+  const range = activeDateRange();
+  if (target.getMonth() !== range.viewDate.getMonth() || target.getFullYear() !== range.viewDate.getFullYear()) {
+    range.viewDate = new Date(target.getFullYear(), target.getMonth(), 1);
     renderDateRangePicker(targetDate);
   }
   document.querySelectorAll(".calendar-day").forEach((day) => { day.tabIndex = day.dataset.date === targetDate ? 0 : -1; });
@@ -574,13 +591,8 @@ function handleDelete(event) {
 function exportCsv(event) {
   event.preventDefault();
   const format = event.submitter?.value || "csv";
-  const start = $("#exportStart").value;
-  const end = $("#exportEnd").value;
+  const { appliedStart: start, appliedEnd: end } = state.exportDateRange;
   $("#exportError").textContent = "";
-  if (start && end && start > end) {
-    $("#exportError").textContent = "開始日期不可晚於結束日期。";
-    return;
-  }
   const entries = state.entries.filter((entry) => (!start || entry.localDate >= start) && (!end || entry.localDate <= end));
   if (!entries.length) {
     $("#exportError").textContent = "此日期區間沒有可匯出的紀錄。";

@@ -191,9 +191,13 @@
         <p class="eyebrow">備份你的回憶</p>
         <h2>匯出日記</h2>
         <p>預設匯出全部紀錄，也可以選擇日期區間。</p>
-        <div class="date-range">
-          <label class="input-field">開始日期<input id="exportStart" type="date" /></label>
-          <label class="input-field">結束日期<input id="exportEnd" type="date" /></label>
+        <div class="export-date-range">
+          <span>匯出日期</span>
+          <button class="date-range-trigger" id="openExportDateRange" type="button" aria-haspopup="dialog">
+            <span id="exportDateRangeLabel">全部日期</span>
+            <span aria-hidden="true">▾</span>
+          </button>
+          <p class="date-range-summary" id="exportDateRangeSummary" aria-live="polite">未選擇區間時將匯出全部紀錄。</p>
         </div>
         <p class="form-error" id="exportError" role="alert"></p>
         <div class="export-actions">
