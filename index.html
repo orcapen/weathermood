@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f5f0" />
+    <meta name="description" content="把此刻的天氣與心情，一起收進日記裡。" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>心晴日記</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#home" aria-label="心晴日記首頁">
+          <span class="brand-mark" aria-hidden="true">◒</span>
+          <span>心晴日記</span>
+        </a>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="設定 API key">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Zm8-3.4c0-.5-.1-1-.2-1.5l2-1.6-2-3.5-2.5 1a8.9 8.9 0 0 0-2.6-1.5L14.3 2h-4.1l-.4 2.9c-.9.3-1.7.8-2.5 1.5l-2.6-1-2 3.5 2.1 1.6a8.7 8.7 0 0 0 0 3l-2.1 1.6 2 3.5 2.6-1a8.9 8.9 0 0 0 2.5 1.5l.4 2.9h4.1l.4-2.9c.9-.3 1.8-.8 2.6-1.5l2.5 1 2-3.5-2-1.6c.1-.5.2-1 .2-1.5Z"/></svg>
+        </button>
+      </header>
+
+      <main>
+        <section class="view active" id="homeView" aria-labelledby="homeTitle">
+          <div class="hero-copy">
+            <p class="eyebrow" id="todayDate">今天</p>
+            <h1 id="homeTitle">今天，感覺如何？</h1>
+            <p>把此刻的天氣與心情，一起收進日記裡。</p>
+          </div>
+
+          <section class="weather-card" id="weatherCard" aria-live="polite">
+            <div class="weather-main">
+              <div>
+                <div class="location-row">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 1 0 5 9c0 5.9 7 12 7 12Zm0-9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/></svg>
+                  <span id="locationName">正在取得位置…</span>
+                </div>
+                <div class="temperature"><strong id="temperature">--</strong><span>°C</span></div>
+                <p class="weather-description" id="weatherDescription">正在讀取天氣</p>
+              </div>
+              <div class="weather-symbol" id="weatherSymbol" aria-hidden="true">◌</div>
+            </div>
+            <div class="weather-details">
+              <div><span>體感</span><strong id="feelsLike">--°</strong></div>
+              <div><span>濕度</span><strong id="humidity">--%</strong></div>
+              <div><span>氣壓</span><strong id="pressure">---- hPa</strong></div>
+            </div>
+            <button class="text-button refresh-button" id="refreshWeather" type="button">重新整理天氣</button>
+          </section>
+
+          <section class="entry-section" aria-labelledby="moodTitle">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">此刻的你</p>
+                <h2 id="moodTitle">選一個最靠近的心情</h2>
+              </div>
+              <span class="step-label">1 / 2</span>
+            </div>
+
+            <div class="mood-grid" role="radiogroup" aria-label="選擇心情">
+              <button class="mood-option" type="button" role="radio" aria-checked="false" data-mood="開心" data-emoji="☀️" disabled>
+                <span class="mood-emoji">☀️</span><span>開心</span>
+              </button>
+              <button class="mood-option" type="button" role="radio" aria-checked="false" data-mood="平靜" data-emoji="🌤️" disabled>
+                <span class="mood-emoji">🌤️</span><span>平靜</span>
+              </button>
+              <button class="mood-option" type="button" role="radio" aria-checked="false" data-mood="低落" data-emoji="🌧️" disabled>
+                <span class="mood-emoji">🌧️</span><span>低落</span>
+              </button>
+            </div>
+
+            <label class="note-field" for="noteInput">
+              <span class="note-label"><span>留下一點什麼</span><span id="noteCount">0 / 200</span></span>
+              <textarea id="noteInput" maxlength="200" rows="4" placeholder="取得位置與天氣後即可開始記錄。" disabled></textarea>
+            </label>
+            <button class="primary-button" id="saveEntry" type="button" disabled>
+              <span>收進今天的日記</span><span aria-hidden="true">→</span>
+            </button>
+          </section>
+
+          <section class="today-section" id="todaySection" aria-labelledby="todayTitle" hidden>
+            <div class="section-heading compact">
+              <div><p class="eyebrow">今日足跡</p><h2 id="todayTitle">今天的紀錄</h2></div>
+              <span id="todayCount"></span>
+            </div>
+            <div class="entry-list" id="todayList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="historyView" aria-labelledby="historyTitle" hidden>
+          <div class="history-header">
+            <div>
+              <p class="eyebrow">你的心情氣候</p>
+              <h1 id="historyTitle">所有日記</h1>
+              <p id="historySummary">每一天，都是值得收藏的天氣。</p>
+            </div>
+            <button class="secondary-button" id="openExport" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+              匯出 CSV
+            </button>
+          </div>
+          <div class="history-controls">
+            <label>心情篩選
+              <select id="moodFilter">
+                <option value="all">全部心情</option>
+                <option value="開心">開心</option>
+                <option value="平靜">平靜</option>
+                <option value="低落">低落</option>
+              </select>
+            </label>
+          </div>
+          <div class="empty-state" id="emptyHistory" hidden>
+            <span>☁️</span><h2>還沒有日記</h2><p>回到首頁，記下你的第一份心情天氣。</p>
+          </div>
+          <div class="history-list" id="historyList"></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主要導覽">
+        <a href="#home" class="nav-item active" data-view="home">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3V11Z"/></svg><span>今天</span>
+        </a>
+        <a href="#history" class="nav-item" data-view="history">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h4"/></svg><span>日記</span>
+        </a>
+      </nav>
+    </div>
+
+    <dialog class="modal" id="apiDialog">
+      <form method="dialog" id="apiForm">
+        <button class="modal-close" type="button" id="closeApiDialog" aria-label="關閉">×</button>
+        <span class="modal-icon">⌁</span>
+        <p class="eyebrow">開始之前</p>
+        <h2>連接你的天氣資料</h2>
+        <p>請輸入 OpenWeatherMap API key。它只會儲存在這台裝置的瀏覽器中。</p>
+        <label class="input-field">API key
+          <input id="apiKeyInput" type="password" autocomplete="off" required placeholder="貼上 API key" />
+        </label>
+        <p class="form-error" id="apiError" role="alert"></p>
+        <button class="primary-button" type="submit">儲存並取得天氣</button>
+        <a class="helper-link" href="https://openweathermap.org/api" target="_blank" rel="noreferrer">還沒有 API key？前往免費申請 ↗</a>
+      </form>
+    </dialog>
+
+    <dialog class="modal" id="exportDialog">
+      <form method="dialog" id="exportForm">
+        <button class="modal-close" type="button" id="closeExportDialog" aria-label="關閉">×</button>
+        <p class="eyebrow">備份你的回憶</p>
+        <h2>匯出日記</h2>
+        <p>預設匯出全部紀錄，也可以選擇日期區間。</p>
+        <div class="date-range">
+          <label class="input-field">開始日期<input id="exportStart" type="date" /></label>
+          <label class="input-field">結束日期<input id="exportEnd" type="date" /></label>
+        </div>
+        <p class="form-error" id="exportError" role="alert"></p>
+        <button class="primary-button" type="submit">下載 CSV</button>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js" defer></script>
+  </body>
+</html>
