@@ -1,4 +1,4 @@
-const CACHE_NAME = "weathermood-v2";
+const CACHE_NAME = "weathermood-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -11,6 +11,15 @@ const APP_SHELL = [
   "./faveicon/apple-touch-icon.png",
   "./faveicon/android-chrome-192x192.png",
   "./faveicon/android-chrome-512x512.png",
+  "./assets/fluent-emoji/cloud.png",
+  "./assets/fluent-emoji/drizzle.png",
+  "./assets/fluent-emoji/fog.png",
+  "./assets/fluent-emoji/rain.png",
+  "./assets/fluent-emoji/snow.png",
+  "./assets/fluent-emoji/sun.png",
+  "./assets/fluent-emoji/thunderstorm.png",
+  "./assets/fluent-emoji/tornado.png",
+  "./assets/fluent-emoji/wind.png",
 ];
 
 self.addEventListener("install", (event) => {

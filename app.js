@@ -15,22 +15,28 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const weatherSymbols = {
-  Thunderstorm: "⛈",
-  Drizzle: "🌦",
-  Rain: "🌧",
-  Snow: "❄",
-  Clear: "☀",
-  Clouds: "☁",
-  Mist: "≋",
-  Smoke: "≋",
-  Haze: "≋",
-  Dust: "≋",
-  Fog: "≋",
-  Sand: "≋",
-  Ash: "≋",
-  Squall: "〰",
-  Tornado: "◉",
+  Thunderstorm: "thunderstorm",
+  Drizzle: "drizzle",
+  Rain: "rain",
+  Snow: "snow",
+  Clear: "sun",
+  Clouds: "cloud",
+  Mist: "fog",
+  Smoke: "fog",
+  Haze: "fog",
+  Dust: "fog",
+  Fog: "fog",
+  Sand: "fog",
+  Ash: "fog",
+  Squall: "wind",
+  Tornado: "tornado",
 };
+
+function setWeatherSymbol(symbol, stateClass = "") {
+  const element = $("#weatherSymbol");
+  element.src = `assets/fluent-emoji/${symbol}.png`;
+  element.className = `weather-symbol${stateClass ? ` ${stateClass}` : ""}`;
+}
 
 const weatherLabels = {
   "clear sky": "晴朗",
@@ -192,7 +198,7 @@ function setWeatherLoading() {
   setEntryAvailability(false);
   $("#locationName").textContent = "正在取得位置…";
   $("#weatherDescription").textContent = "正在讀取天氣";
-  $("#weatherSymbol").textContent = "◌";
+  setWeatherSymbol("cloud", "is-loading");
   $("#refreshWeather").disabled = true;
 }
 
@@ -204,7 +210,7 @@ function renderWeather() {
   $("#humidity").textContent = `${weather.humidity}%`;
   $("#pressure").textContent = `${weather.pressure} hPa`;
   $("#weatherDescription").textContent = weatherLabels[weather.description] || weather.description;
-  $("#weatherSymbol").textContent = weatherSymbols[weather.condition] || "☁";
+  setWeatherSymbol(weatherSymbols[weather.condition] || "cloud");
   $("#refreshWeather").disabled = false;
   setEntryAvailability(true);
 }
@@ -214,7 +220,7 @@ function showWeatherError(message) {
   $("#locationName").textContent = "無法取得天氣";
   $("#temperature").textContent = "--";
   $("#weatherDescription").textContent = message;
-  $("#weatherSymbol").textContent = "!";
+  setWeatherSymbol("cloud", "is-error");
   $("#refreshWeather").disabled = false;
   setEntryAvailability(false);
   showToast(message);

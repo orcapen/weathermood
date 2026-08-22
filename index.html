@@ -44,7 +44,15 @@
                 <div class="temperature"><strong id="temperature">--</strong><span>°C</span></div>
                 <p class="weather-description" id="weatherDescription">正在讀取天氣</p>
               </div>
-              <div class="weather-symbol" id="weatherSymbol" aria-hidden="true">◌</div>
+              <img
+                class="weather-symbol is-loading"
+                id="weatherSymbol"
+                src="assets/fluent-emoji/cloud.png"
+                alt=""
+                width="160"
+                height="160"
+                aria-hidden="true"
+              />
             </div>
             <div class="weather-details">
               <div><span>體感</span><strong id="feelsLike">--°</strong></div>
