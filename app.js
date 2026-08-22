@@ -72,7 +72,7 @@ function bindEvents() {
   $("#refreshWeather").addEventListener("click", requestLocationAndWeather);
   $("#settingsButton").addEventListener("click", openApiDialog);
   $("#apiForm").addEventListener("submit", saveApiKey);
-  $("#closeApiDialog").addEventListener("click", closeApiDialog);
+  $("#closeApiDialog").addEventListener("click", () => $("#apiDialog").close());
   $("#openExport").addEventListener("click", () => $("#exportDialog").showModal());
   $("#closeExportDialog").addEventListener("click", () => $("#exportDialog").close());
   $("#exportForm").addEventListener("submit", exportCsv);
@@ -208,7 +208,7 @@ function setEntryAvailability(available) {
   $$(".mood-option").forEach((option) => { option.disabled = !available; });
   $("#noteInput").disabled = !available;
   $("#noteInput").placeholder = available
-    ? "今天發生了什麼？也可以只寫一句話。"
+    ? "（選填）今天的心情想說些什麼？"
     : "取得位置與天氣後即可開始記錄。";
   if (!available) $("#saveEntry").disabled = true;
 }

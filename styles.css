@@ -36,7 +36,7 @@ button { color: inherit; }
 .icon-button, .modal-close {
   display: grid; place-items: center; border: 0; background: transparent; cursor: pointer;
 }
-.icon-button { width: 42px; height: 42px; border-radius: 50%; }
+.icon-button { display: flex; gap: 8px; align-items: center; min-height: 42px; padding: 0 12px; border-radius: 21px; font-size: .9rem; font-weight: 700; }
 .icon-button:hover { background: #ebe7de; }
 .icon-button svg { width: 21px; fill: var(--ink); }
 main { width: min(100% - 40px, 960px); margin: 0 auto; }
