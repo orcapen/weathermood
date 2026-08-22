@@ -1,5 +1,17 @@
-const CACHE_NAME = "weathermood-v1";
-const APP_SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
+const CACHE_NAME = "weathermood-v2";
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./app.js",
+  "./manifest.webmanifest",
+  "./faveicon/favicon.ico",
+  "./faveicon/favicon-16x16.png",
+  "./faveicon/favicon-32x32.png",
+  "./faveicon/apple-touch-icon.png",
+  "./faveicon/android-chrome-192x192.png",
+  "./faveicon/android-chrome-512x512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
