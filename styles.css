@@ -73,7 +73,7 @@ h2 { margin-bottom: 6px; font-family: Georgia, "Noto Serif TC", serif; font-size
 .section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 24px; }
 .section-heading.compact { align-items: center; }
 .step-label, #todayCount { color: var(--muted); font-size: .86rem; }
-.mood-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
 .mood-option { display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 24px 14px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); cursor: pointer; transition: .2s ease; }
 .mood-option:hover { border-color: #b9b3a8; transform: translateY(-2px); }
 .mood-option[aria-checked="true"] { border-color: var(--accent); background: #fff7f2; box-shadow: 0 0 0 3px rgb(228 107 69 / 12%); }

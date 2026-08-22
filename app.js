@@ -43,6 +43,18 @@ const weatherLabels = {
   "heavy intensity rain": "大雨",
 };
 
+const moodLabels = { 1: "低落", 2: "不好", 3: "平靜", 4: "不錯", 5: "開心" };
+const legacyMoodScores = { 低落: 1, 不好: 2, 平靜: 3, 不錯: 4, 開心: 5 };
+
+function moodScore(value) {
+  const score = Number(value);
+  return Number.isInteger(score) && score >= 1 && score <= 5 ? score : legacyMoodScores[value] || null;
+}
+
+function moodLabel(value) {
+  return moodLabels[moodScore(value)] || "平靜";
+}
+
 document.addEventListener("DOMContentLoaded", init);
 
 function init() {
@@ -50,6 +62,7 @@ function init() {
     month: "long", day: "numeric", weekday: "long",
   }).format(new Date());
 
+  migrateStoredMoods();
   bindEvents();
   route();
   renderEntries();
@@ -218,7 +231,7 @@ function setEntryAvailability(available) {
 
 function chooseMood(button) {
   if (!state.weather) return;
-  state.selectedMood = { mood: button.dataset.mood, emoji: button.dataset.emoji };
+  state.selectedMood = { mood: Number(button.dataset.mood), emoji: button.dataset.emoji };
   $$(".mood-option").forEach((option) => {
     option.setAttribute("aria-checked", String(option === button));
   });
@@ -254,6 +267,19 @@ function saveEntry() {
   $("#todaySection").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function migrateStoredMoods() {
+  let changed = false;
+  state.entries = state.entries.map((entry) => {
+    const mood = moodScore(entry.mood);
+    if (!mood) return entry;
+    const emoji = $(`.mood-option[data-mood="${mood}"]`)?.dataset.emoji || entry.emoji;
+    if (entry.mood === mood && entry.emoji === emoji) return entry;
+    changed = true;
+    return { ...entry, mood, emoji };
+  });
+  if (changed) persistEntries();
+}
+
 function getTodayEntry() {
   const today = toLocalDate(new Date());
   return state.entries.find((entry) => entry.localDate === today) || null;
@@ -266,9 +292,9 @@ function loadTodayEntry() {
     return;
   }
 
-  state.selectedMood = { mood: entry.mood, emoji: entry.emoji };
+  state.selectedMood = { mood: moodScore(entry.mood), emoji: entry.emoji };
   $$(".mood-option").forEach((option) => {
-    option.setAttribute("aria-checked", String(option.dataset.mood === entry.mood));
+    option.setAttribute("aria-checked", String(Number(option.dataset.mood) === moodScore(entry.mood)));
   });
   $("#noteInput").value = entry.note || "";
   $("#noteCount").textContent = `${$("#noteInput").value.length} / 200`;
@@ -305,7 +331,7 @@ function renderEntries() {
 
 function renderHistory() {
   const filter = $("#moodFilter")?.value || "all";
-  const entries = filter === "all" ? state.entries : state.entries.filter((entry) => entry.mood === filter);
+  const entries = filter === "all" ? state.entries : state.entries.filter((entry) => moodLabel(entry.mood) === filter);
   $("#emptyHistory").hidden = state.entries.length !== 0;
   $("#historyList").hidden = state.entries.length === 0;
   $("#historyList").innerHTML = entries.length
@@ -326,7 +352,7 @@ function entryCard(entry) {
   const dateText = new Intl.DateTimeFormat("zh-TW", { month: "short", day: "numeric", weekday: "short" }).format(date);
   return `<article class="entry-card">
     <div class="entry-emoji" aria-hidden="true">${entry.emoji}</div>
-    <div><h3>${escapeHtml(entry.mood)} · ${weatherText}</h3><p>${note}</p></div>
+    <div><h3>${moodLabel(entry.mood)} · ${weatherText}</h3><p>${note}</p></div>
     <div class="entry-meta"><div>${dateText}</div><button class="delete-button" type="button" data-delete-id="${entry.id}">刪除</button></div>
   </article>`;
 }
@@ -452,9 +478,9 @@ function parseCsv(text) {
 
 function normalizeImportedEntry(entry) {
   const localDate = String(entry?.localDate || entry?.date || "").slice(0, 10);
-  const mood = String(entry?.mood || "").trim();
+  const mood = moodScore(String(entry?.mood || "").trim());
   if (!/^\d{4}-\d{2}-\d{2}$/.test(localDate) || !mood) return null;
-  const moodButton = $$(".mood-option").find((button) => button.dataset.mood === mood);
+  const moodButton = $$(".mood-option").find((button) => Number(button.dataset.mood) === mood);
   const hasWeather = entry.weather && Object.values(entry.weather).some((value) => value !== "");
   const weather = hasWeather ? { ...entry.weather,
     temperature: numberOrValue(entry.weather.temperature), feelsLike: numberOrValue(entry.weather.feelsLike),

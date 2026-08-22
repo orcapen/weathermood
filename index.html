@@ -20,9 +20,9 @@
           <span class="brand-mark" aria-hidden="true">◒</span>
           <span>心晴日記</span>
         </a>
-        <button class="icon-button" id="settingsButton" type="button" aria-label="設定天氣 API Key">
+        <button class="icon-button" id="settingsButton" type="button" aria-label="設定 Openweathermap API Key">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Zm8-3.4c0-.5-.1-1-.2-1.5l2-1.6-2-3.5-2.5 1a8.9 8.9 0 0 0-2.6-1.5L14.3 2h-4.1l-.4 2.9c-.9.3-1.7.8-2.5 1.5l-2.6-1-2 3.5 2.1 1.6a8.7 8.7 0 0 0 0 3l-2.1 1.6 2 3.5 2.6-1a8.9 8.9 0 0 0 2.5 1.5l.4 2.9h4.1l.4-2.9c.9-.3 1.8-.8 2.6-1.5l2.5 1 2-3.5-2-1.6c.1-.5.2-1 .2-1.5Z"/></svg>
-          <span>設定天氣 API Key</span>
+          <span>設定 Openweathermap API Key</span>
         </button>
       </header>
 
@@ -63,15 +63,21 @@
               <span class="step-label">1 / 2</span>
             </div>
 
-            <div class="mood-grid" role="radiogroup" aria-label="選擇心情">
-              <button class="mood-option" type="button" role="radio" aria-checked="false" data-mood="開心" data-emoji="☀️" disabled>
-                <span class="mood-emoji">☀️</span><span>開心</span>
+            <div class="mood-grid" role="radiogroup" aria-label="選擇心情（1 分最低落，5 分最開心）">
+              <button class="mood-option" type="button" role="radio" aria-checked="false" aria-label="1 分，低落" data-mood="1" data-emoji="😞" disabled>
+                <span class="mood-emoji">😞</span><span>低落</span>
               </button>
-              <button class="mood-option" type="button" role="radio" aria-checked="false" data-mood="平靜" data-emoji="🌤️" disabled>
-                <span class="mood-emoji">🌤️</span><span>平靜</span>
+              <button class="mood-option" type="button" role="radio" aria-checked="false" aria-label="2 分，不好" data-mood="2" data-emoji="🙁" disabled>
+                <span class="mood-emoji">🙁</span><span>不好</span>
               </button>
-              <button class="mood-option" type="button" role="radio" aria-checked="false" data-mood="低落" data-emoji="🌧️" disabled>
-                <span class="mood-emoji">🌧️</span><span>低落</span>
+              <button class="mood-option" type="button" role="radio" aria-checked="false" aria-label="3 分，平靜" data-mood="3" data-emoji="😐" disabled>
+                <span class="mood-emoji">😐</span><span>平靜</span>
+              </button>
+              <button class="mood-option" type="button" role="radio" aria-checked="false" aria-label="4 分，不錯" data-mood="4" data-emoji="🙂" disabled>
+                <span class="mood-emoji">🙂</span><span>不錯</span>
+              </button>
+              <button class="mood-option" type="button" role="radio" aria-checked="false" aria-label="5 分，開心" data-mood="5" data-emoji="😄" disabled>
+                <span class="mood-emoji">😄</span><span>開心</span>
               </button>
             </div>
 
@@ -115,9 +121,11 @@
             <label>心情篩選
               <select id="moodFilter">
                 <option value="all">全部心情</option>
-                <option value="開心">開心</option>
-                <option value="平靜">平靜</option>
                 <option value="低落">低落</option>
+                <option value="不好">不好</option>
+                <option value="平靜">平靜</option>
+                <option value="不錯">不錯</option>
+                <option value="開心">開心</option>
               </select>
             </label>
           </div>
