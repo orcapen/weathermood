@@ -32,7 +32,7 @@ button { color: inherit; }
   backdrop-filter: blur(16px);
 }
 .brand { display: flex; gap: 10px; align-items: center; color: var(--ink); font-weight: 800; text-decoration: none; letter-spacing: .08em; }
-.brand-mark { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--ink); border-radius: 50%; color: var(--accent); font-size: 22px; }
+.brand-mark { display: block; width: 32px; height: 32px; object-fit: contain; }
 .icon-button, .modal-close {
   display: grid; place-items: center; border: 0; background: transparent; cursor: pointer;
 }
