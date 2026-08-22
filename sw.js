@@ -1,4 +1,4 @@
-const CACHE_NAME = "weathermood-v5";
+const CACHE_NAME = "weathermood-v6";
 const APP_SHELL = [
   "./",
   "./index.html",

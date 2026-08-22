@@ -17,7 +17,7 @@ body {
   min-width: 320px;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
   line-height: 1.5;
 }
 button, input, textarea, select { font: inherit; }
@@ -46,8 +46,8 @@ main { width: min(100% - 40px, 960px); margin: 0 auto; }
 .hero-copy { padding: 58px 0 28px; }
 .eyebrow { margin: 0 0 8px; color: var(--accent-dark); font-size: .76rem; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
 h1, h2, p { margin-top: 0; }
-h1 { margin-bottom: 10px; font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 500; letter-spacing: -.035em; line-height: 1.12; }
-h2 { margin-bottom: 6px; font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(1.45rem, 4vw, 2rem); font-weight: 500; }
+h1 { margin-bottom: 10px; font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 500; letter-spacing: -.035em; line-height: 1.12; }
+h2 { margin-bottom: 6px; font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: clamp(1.45rem, 4vw, 2rem); font-weight: 500; }
 .hero-copy > p:last-child, .history-header > div > p:last-child { color: var(--muted); }
 .weather-card {
   overflow: hidden; position: relative; padding: 34px;
@@ -59,7 +59,7 @@ h2 { margin-bottom: 6px; font-family: Georgia, "Noto Serif TC", serif; font-size
 .location-row { display: flex; gap: 7px; align-items: center; color: var(--muted); font-size: .92rem; }
 .location-row svg { width: 16px; fill: var(--accent); }
 .temperature { display: flex; align-items: flex-start; margin-top: 10px; line-height: 1; }
-.temperature strong { font-family: Georgia, serif; font-size: clamp(4.5rem, 14vw, 7rem); font-weight: 400; letter-spacing: -.06em; }
+.temperature strong { font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: clamp(4.5rem, 14vw, 7rem); font-weight: 400; letter-spacing: -.06em; }
 .temperature span { margin: 12px 0 0 10px; font-size: 1.6rem; }
 .weather-description { margin-bottom: 0; font-weight: 700; }
 .weather-symbol { z-index: 1; display: block; width: 160px; height: 160px; object-fit: contain; filter: drop-shadow(0 16px 20px rgb(67 91 119 / 20%)); }
@@ -102,7 +102,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .entry-list, .history-list { display: grid; gap: 12px; }
 .entry-card { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .entry-emoji { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #f4efe6; font-size: 1.55rem; }
-.entry-card h3 { margin: 0 0 3px; font-family: Georgia, "Noto Serif TC", serif; font-size: 1.17rem; }
+.entry-card h3 { margin: 0 0 3px; font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: 1.17rem; }
 .entry-card p { margin: 0; color: var(--muted); font-size: .92rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .entry-meta { color: var(--muted); font-size: .78rem; text-align: right; }
 .delete-button { margin-top: 6px; border: 0; background: transparent; color: #9b5544; font-size: .78rem; cursor: pointer; }
