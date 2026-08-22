@@ -143,6 +143,14 @@
                 <option value="開心">開心</option>
               </select>
             </label>
+            <div class="date-filter-control">
+              <span>日期篩選</span>
+              <button class="date-range-trigger" id="openDateRange" type="button" aria-haspopup="dialog">
+                <span id="dateRangeLabel">選擇日期區間</span>
+                <span aria-hidden="true">▾</span>
+              </button>
+              <p class="date-range-summary" id="dateRangeSummary" aria-live="polite"></p>
+            </div>
           </div>
           <div class="empty-state" id="emptyHistory" hidden>
             <span>☁️</span><h2>還沒有日記</h2><p>回到首頁，記下你的第一份心情天氣。</p>
@@ -193,6 +201,34 @@
           <button class="secondary-button" type="submit" value="json">下載 JSON</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog class="modal date-picker-modal" id="dateRangeDialog" aria-labelledby="dateRangeTitle">
+      <div class="date-picker-panel">
+        <button class="modal-close" type="button" id="closeDateRange" aria-label="關閉日期區間選擇器">×</button>
+        <p class="eyebrow">日期篩選</p>
+        <h2 id="dateRangeTitle">選擇日期區間</h2>
+        <p class="date-picker-instruction" id="datePickerInstruction">請先選擇開始日。</p>
+
+        <div class="calendar-header">
+          <button class="calendar-nav" id="previousMonth" type="button" aria-label="上一個月">‹</button>
+          <strong id="calendarMonth" aria-live="polite"></strong>
+          <button class="calendar-nav" id="nextMonth" type="button" aria-label="下一個月">›</button>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid" role="grid" aria-labelledby="calendarMonth" aria-describedby="calendarHelp"></div>
+        <p class="calendar-help" id="calendarHelp">可使用方向鍵逐日或逐週移動，Page Up、Page Down 切換月份。</p>
+
+        <div class="date-selection" id="dateSelection" aria-live="polite"></div>
+        <p class="form-error date-picker-error" id="datePickerError" role="alert"></p>
+        <div class="date-picker-actions">
+          <button class="secondary-button" id="restartDateRange" type="button">重新選取</button>
+          <button class="text-button" id="clearDateRange" type="button">清除</button>
+          <button class="primary-button" id="confirmDateRange" type="button" disabled>確認</button>
+        </div>
+      </div>
     </dialog>
 
     <input id="importFile" type="file" accept=".csv,.json,text/csv,application/json" hidden />

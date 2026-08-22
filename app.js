@@ -9,6 +9,14 @@ const state = {
   position: null,
   selectedMood: null,
   entries: readEntries(),
+  dateRange: {
+    start: "",
+    end: "",
+    appliedStart: "",
+    appliedEnd: "",
+    selecting: "start",
+    viewDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  },
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -99,6 +107,15 @@ function bindEvents() {
   $("#closeExportDialog").addEventListener("click", () => $("#exportDialog").close());
   $("#exportForm").addEventListener("submit", exportCsv);
   $("#moodFilter").addEventListener("change", renderHistory);
+  $("#openDateRange").addEventListener("click", openDateRangePicker);
+  $("#closeDateRange").addEventListener("click", () => $("#dateRangeDialog").close());
+  $("#previousMonth").addEventListener("click", () => changeCalendarMonth(-1));
+  $("#nextMonth").addEventListener("click", () => changeCalendarMonth(1));
+  $("#calendarGrid").addEventListener("click", handleCalendarClick);
+  $("#calendarGrid").addEventListener("keydown", handleCalendarKeydown);
+  $("#restartDateRange").addEventListener("click", restartDateRange);
+  $("#clearDateRange").addEventListener("click", clearDateRange);
+  $("#confirmDateRange").addEventListener("click", confirmDateRange);
   $("#todayList").addEventListener("click", handleDelete);
   $("#historyList").addEventListener("click", handleDelete);
 }
@@ -337,15 +354,196 @@ function renderEntries() {
 
 function renderHistory() {
   const filter = $("#moodFilter")?.value || "all";
-  const entries = filter === "all" ? state.entries : state.entries.filter((entry) => moodLabel(entry.mood) === filter);
+  const { appliedStart, appliedEnd } = state.dateRange;
+  const entries = state.entries.filter((entry) =>
+    (filter === "all" || moodLabel(entry.mood) === filter)
+    && (!appliedStart || entry.localDate >= appliedStart)
+    && (!appliedEnd || entry.localDate <= appliedEnd));
   $("#emptyHistory").hidden = state.entries.length !== 0;
   $("#historyList").hidden = state.entries.length === 0;
   $("#historyList").innerHTML = entries.length
     ? entries.map(entryCard).join("")
-    : '<div class="empty-state"><span>◌</span><h2>沒有符合的紀錄</h2><p>試著選擇其他心情。</p></div>';
+    : '<div class="empty-state"><span>◌</span><h2>沒有符合的紀錄</h2><p>試著調整心情或日期篩選。</p></div>';
   $("#historySummary").textContent = state.entries.length
     ? `你已收藏 ${state.entries.length} 份心情天氣。`
     : "每一天，都是值得收藏的天氣。";
+}
+
+function openDateRangePicker() {
+  const anchor = state.dateRange.start || state.dateRange.appliedStart || toLocalDate(new Date());
+  state.dateRange.viewDate = parseLocalDate(anchor);
+  state.dateRange.viewDate.setDate(1);
+  renderDateRangePicker();
+  $("#dateRangeDialog").showModal();
+  requestAnimationFrame(() => {
+    const selected = $(".calendar-day.range-start") || $(".calendar-day.today") || $(".calendar-day");
+    selected?.focus();
+  });
+}
+
+function renderDateRangePicker(focusDate = "") {
+  const { start, end, selecting, viewDate } = state.dateRange;
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = toLocalDate(new Date());
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const activeFocus = focusDate.startsWith(monthPrefix) ? focusDate
+    : start.startsWith(monthPrefix) ? start
+      : today.startsWith(monthPrefix) ? today
+        : `${monthPrefix}-01`;
+
+  $("#calendarMonth").textContent = `${year} 年 ${month + 1} 月`;
+  const days = Array.from({ length: daysInMonth }, (_, index) => {
+    const date = toLocalDate(new Date(year, month, index + 1));
+    const classes = ["calendar-day"];
+    if (start && end && start <= end && date > start && date < end) classes.push("in-range");
+    if (date === start) classes.push("range-start");
+    if (date === end) classes.push("range-end");
+    if (date === today) classes.push("today");
+    const selected = date === start || date === end;
+    return `<button class="${classes.join(" ")}" type="button" role="gridcell" data-date="${date}" tabindex="${date === activeFocus ? "0" : "-1"}" aria-label="${formatLongDate(date)}" aria-selected="${selected}">${index + 1}</button>`;
+  }).join("");
+  $("#calendarGrid").innerHTML = `${'<span class="calendar-spacer" aria-hidden="true"></span>'.repeat(firstWeekday)}${days}`;
+
+  $("#datePickerInstruction").textContent = selecting === "start"
+    ? "請先選擇開始日。"
+    : selecting === "end" ? "接著選擇結束日。" : "日期區間已選定，按下確認即可套用。";
+  $("#confirmDateRange").disabled = !start || !end || end < start;
+  updateDateSelection();
+}
+
+function handleCalendarClick(event) {
+  const button = event.target.closest("[data-date]");
+  if (!button) return;
+  selectRangeDate(button.dataset.date);
+}
+
+function selectRangeDate(date) {
+  const range = state.dateRange;
+  if (range.selecting === "start" || range.selecting === "complete") {
+    range.start = date;
+    range.end = "";
+    range.selecting = "end";
+    $("#datePickerError").textContent = "";
+  } else {
+    range.end = date;
+    if (range.end < range.start) {
+      $("#datePickerError").textContent = "結束日不可早於開始日，請重新選擇結束日。";
+    } else {
+      range.selecting = "complete";
+      $("#datePickerError").textContent = "";
+    }
+  }
+  renderDateRangePicker(date);
+  $( `[data-date="${date}"]` )?.focus();
+}
+
+function updateDateSelection() {
+  const { start, end } = state.dateRange;
+  if (!start) {
+    $("#dateSelection").innerHTML = "尚未選擇日期。";
+    return;
+  }
+  const duration = end && end >= start ? inclusiveDays(start, end) : 0;
+  $("#dateSelection").innerHTML = `<strong>${formatShortDate(start)} → ${end ? formatShortDate(end) : "請選擇結束日"}</strong>${duration ? `共 ${duration} 天（包含開始與結束日）` : ""}`;
+}
+
+function updateAppliedDateRange() {
+  const { appliedStart, appliedEnd } = state.dateRange;
+  if (!appliedStart || !appliedEnd) {
+    $("#dateRangeLabel").textContent = "選擇日期區間";
+    $("#dateRangeSummary").textContent = "";
+    return;
+  }
+  const duration = inclusiveDays(appliedStart, appliedEnd);
+  $("#dateRangeLabel").textContent = `${formatShortDate(appliedStart)} – ${formatShortDate(appliedEnd)}`;
+  $("#dateRangeSummary").textContent = `開始 ${formatLongDate(appliedStart)}・結束 ${formatLongDate(appliedEnd)}・共 ${duration} 天`;
+}
+
+function restartDateRange() {
+  state.dateRange.start = "";
+  state.dateRange.end = "";
+  state.dateRange.selecting = "start";
+  state.dateRange.viewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  $("#datePickerError").textContent = "";
+  renderDateRangePicker();
+  $(".calendar-day.today")?.focus();
+}
+
+function clearDateRange() {
+  restartDateRange();
+  state.dateRange.appliedStart = "";
+  state.dateRange.appliedEnd = "";
+  updateAppliedDateRange();
+  renderHistory();
+}
+
+function confirmDateRange() {
+  const range = state.dateRange;
+  if (!range.start || !range.end || range.end < range.start) return;
+  range.appliedStart = range.start;
+  range.appliedEnd = range.end;
+  updateAppliedDateRange();
+  renderHistory();
+  $("#dateRangeDialog").close();
+  $("#openDateRange").focus();
+}
+
+function changeCalendarMonth(offset, focusDay = 1) {
+  const current = state.dateRange.viewDate;
+  state.dateRange.viewDate = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+  const maxDay = new Date(state.dateRange.viewDate.getFullYear(), state.dateRange.viewDate.getMonth() + 1, 0).getDate();
+  const focusDate = toLocalDate(new Date(state.dateRange.viewDate.getFullYear(), state.dateRange.viewDate.getMonth(), Math.min(focusDay, maxDay)));
+  renderDateRangePicker(focusDate);
+  requestAnimationFrame(() => $( `[data-date="${focusDate}"]` )?.focus());
+}
+
+function handleCalendarKeydown(event) {
+  const button = event.target.closest("[data-date]");
+  if (!button) return;
+  const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+  let target;
+  if (event.key in offsets) {
+    target = parseLocalDate(button.dataset.date);
+    target.setDate(target.getDate() + offsets[event.key]);
+  } else if (event.key === "Home" || event.key === "End") {
+    target = parseLocalDate(button.dataset.date);
+    target.setDate(target.getDate() + (event.key === "Home" ? -target.getDay() : 6 - target.getDay()));
+  } else if (event.key === "PageUp" || event.key === "PageDown") {
+    event.preventDefault();
+    changeCalendarMonth(event.key === "PageUp" ? -1 : 1, parseLocalDate(button.dataset.date).getDate());
+    return;
+  } else {
+    return;
+  }
+  event.preventDefault();
+  const targetDate = toLocalDate(target);
+  if (target.getMonth() !== state.dateRange.viewDate.getMonth() || target.getFullYear() !== state.dateRange.viewDate.getFullYear()) {
+    state.dateRange.viewDate = new Date(target.getFullYear(), target.getMonth(), 1);
+    renderDateRangePicker(targetDate);
+  }
+  document.querySelectorAll(".calendar-day").forEach((day) => { day.tabIndex = day.dataset.date === targetDate ? 0 : -1; });
+  $( `[data-date="${targetDate}"]` )?.focus();
+}
+
+function parseLocalDate(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function inclusiveDays(start, end) {
+  const milliseconds = parseLocalDate(end) - parseLocalDate(start);
+  return Math.round(milliseconds / 86400000) + 1;
+}
+
+function formatShortDate(value) {
+  return new Intl.DateTimeFormat("zh-TW", { month: "numeric", day: "numeric" }).format(parseLocalDate(value));
+}
+
+function formatLongDate(value) {
+  return new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "long", day: "numeric" }).format(parseLocalDate(value));
 }
 
 function entryCard(entry) {
