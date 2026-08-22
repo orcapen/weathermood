@@ -23,3 +23,7 @@ uv run python -m http.server 8000
 ## 資料與隱私
 
 API key 與日記只保存在目前瀏覽器的 `localStorage`，不會傳送到自建後端；API key 僅用於直接呼叫 OpenWeatherMap。
+
+## 授權
+
+本專案採用 [MIT License](LICENSE) 授權。原始碼位於 [GitHub](https://github.com/orcapen/weathermood)。

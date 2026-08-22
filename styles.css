@@ -31,12 +31,13 @@ button { color: inherit; }
   background: color-mix(in srgb, var(--paper) 90%, transparent);
   backdrop-filter: blur(16px);
 }
-.brand { display: flex; gap: 10px; align-items: center; color: var(--ink); font-weight: 800; text-decoration: none; letter-spacing: .08em; }
+.brand { order: 1; display: flex; gap: 10px; align-items: center; color: var(--ink); font-weight: 800; text-decoration: none; letter-spacing: .08em; }
 .brand-mark { display: block; width: 32px; height: 32px; object-fit: contain; }
 .icon-button, .modal-close {
   display: grid; place-items: center; border: 0; background: transparent; cursor: pointer;
 }
-.icon-button { display: flex; gap: 8px; align-items: center; min-height: 42px; padding: 0 12px; border-radius: 21px; font-size: .9rem; font-weight: 700; }
+.icon-button { order: 3; display: flex; gap: 8px; align-items: center; min-height: 42px; padding: 0 12px; border-radius: 21px; color: var(--ink); font-size: .9rem; font-weight: 700; text-decoration: none; }
+.github-link { order: 2; margin-left: auto; }
 .icon-button:hover { background: #ebe7de; }
 .icon-button svg { width: 21px; fill: var(--ink); }
 main { width: min(100% - 40px, 960px); margin: 0 auto; }
@@ -135,6 +136,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 
 @media (max-width: 620px) {
   .topbar { height: 64px; padding: 0 20px; }
+  .github-link span { display: none; }
+  .github-link { width: 42px; justify-content: center; padding: 0; }
   main { width: min(100% - 28px, 960px); }
   .hero-copy, .history-header { padding-top: 34px; }
   .weather-card { padding: 24px 20px; border-radius: 20px; }
