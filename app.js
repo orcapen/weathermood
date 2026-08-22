@@ -53,6 +53,7 @@ function init() {
   bindEvents();
   route();
   renderEntries();
+  loadTodayEntry();
   registerServiceWorker();
 
   if (!state.apiKey) {
@@ -210,7 +211,7 @@ function setEntryAvailability(available) {
   $("#noteInput").placeholder = available
     ? "（選填）今天的心情想說些什麼？"
     : "取得位置與天氣後即可開始記錄。";
-  if (!available) $("#saveEntry").disabled = true;
+  $("#saveEntry").disabled = !available || !state.selectedMood;
 }
 
 function chooseMood(button) {
@@ -225,25 +226,57 @@ function chooseMood(button) {
 function saveEntry() {
   if (!state.selectedMood || !state.weather) return;
   const now = new Date();
+  const localDate = toLocalDate(now);
+  const existingIndex = state.entries.findIndex((item) => item.localDate === localDate);
+  const existingEntry = existingIndex === -1 ? null : state.entries[existingIndex];
   const entry = {
-    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-    createdAt: now.toISOString(),
-    localDate: toLocalDate(now),
+    id: existingEntry?.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
+    createdAt: existingEntry?.createdAt || localDate,
+    updatedAt: localDate,
+    localDate,
     mood: state.selectedMood.mood,
     emoji: state.selectedMood.emoji,
     note: $("#noteInput").value.trim(),
     weather: state.weather ? { ...state.weather } : null,
   };
-  state.entries.unshift(entry);
+  if (existingIndex === -1) {
+    state.entries.unshift(entry);
+  } else {
+    state.entries = state.entries.filter((item) => item.localDate !== localDate);
+    state.entries.unshift(entry);
+  }
   persistEntries();
-  state.selectedMood = null;
-  $$(".mood-option").forEach((option) => option.setAttribute("aria-checked", "false"));
-  $("#noteInput").value = "";
-  $("#noteCount").textContent = "0 / 200";
-  $("#saveEntry").disabled = true;
   renderEntries();
-  showToast("已收進今天的日記");
+  updateSaveButton(true);
+  showToast(existingEntry ? "今天的日記已更新" : "今天的日記已儲存");
   $("#todaySection").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function getTodayEntry() {
+  const today = toLocalDate(new Date());
+  return state.entries.find((entry) => entry.localDate === today) || null;
+}
+
+function loadTodayEntry() {
+  const entry = getTodayEntry();
+  if (!entry) {
+    updateSaveButton(false);
+    return;
+  }
+
+  state.selectedMood = { mood: entry.mood, emoji: entry.emoji };
+  $$(".mood-option").forEach((option) => {
+    option.setAttribute("aria-checked", String(option.dataset.mood === entry.mood));
+  });
+  $("#noteInput").value = entry.note || "";
+  $("#noteCount").textContent = `${$("#noteInput").value.length} / 200`;
+  $("#saveEntry").disabled = !state.weather;
+  updateSaveButton(true);
+}
+
+function updateSaveButton(isUpdate) {
+  const label = $("#saveEntry span:first-child");
+  if (label) label.textContent = isUpdate ? "更新今天的日記" : "儲存今天的日記";
 }
 
 function readEntries() {
@@ -289,11 +322,10 @@ function entryCard(entry) {
     : "未記錄天氣";
   const note = entry.note ? escapeHtml(entry.note) : "沒有留下備註";
   const dateText = new Intl.DateTimeFormat("zh-TW", { month: "short", day: "numeric", weekday: "short" }).format(date);
-  const timeText = new Intl.DateTimeFormat("zh-TW", { hour: "2-digit", minute: "2-digit" }).format(date);
   return `<article class="entry-card">
     <div class="entry-emoji" aria-hidden="true">${entry.emoji}</div>
     <div><h3>${escapeHtml(entry.mood)} · ${weatherText}</h3><p>${note}</p></div>
-    <div class="entry-meta"><div>${dateText}</div><div>${timeText}</div><button class="delete-button" type="button" data-delete-id="${entry.id}">刪除</button></div>
+    <div class="entry-meta"><div>${dateText}</div><button class="delete-button" type="button" data-delete-id="${entry.id}">刪除</button></div>
   </article>`;
 }
 
@@ -321,11 +353,10 @@ function exportCsv(event) {
     $("#exportError").textContent = "此日期區間沒有可匯出的紀錄。";
     return;
   }
-  const header = ["日期", "時間", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
+  const header = ["日期", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
   const rows = entries.map((entry) => {
-    const date = new Date(entry.createdAt);
     const weather = entry.weather || {};
-    return [entry.localDate, date.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" }), entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description];
+    return [entry.localDate, entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description];
   });
   const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
