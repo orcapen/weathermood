@@ -100,10 +100,13 @@
               <h1 id="historyTitle">所有日記</h1>
               <p id="historySummary">每一天，都是值得收藏的天氣。</p>
             </div>
-            <button class="secondary-button" id="openExport" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
-              匯出 CSV
-            </button>
+            <div class="data-actions">
+              <button class="secondary-button" id="openImport" type="button">匯入資料</button>
+              <button class="secondary-button" id="openExport" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+                匯出資料
+              </button>
+            </div>
           </div>
           <div class="history-controls">
             <label>心情篩選
@@ -159,9 +162,14 @@
           <label class="input-field">結束日期<input id="exportEnd" type="date" /></label>
         </div>
         <p class="form-error" id="exportError" role="alert"></p>
-        <button class="primary-button" type="submit">下載 CSV</button>
+        <div class="export-actions">
+          <button class="primary-button" type="submit" value="csv">下載 CSV</button>
+          <button class="secondary-button" type="submit" value="json">下載 JSON</button>
+        </div>
       </form>
     </dialog>
+
+    <input id="importFile" type="file" accept=".csv,.json,text/csv,application/json" hidden />
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="app.js" defer></script>

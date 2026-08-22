@@ -75,6 +75,8 @@ function bindEvents() {
   $("#apiForm").addEventListener("submit", saveApiKey);
   $("#closeApiDialog").addEventListener("click", () => $("#apiDialog").close());
   $("#openExport").addEventListener("click", () => $("#exportDialog").showModal());
+  $("#openImport").addEventListener("click", () => $("#importFile").click());
+  $("#importFile").addEventListener("change", importData);
   $("#closeExportDialog").addEventListener("click", () => $("#exportDialog").close());
   $("#exportForm").addEventListener("submit", exportCsv);
   $("#moodFilter").addEventListener("change", renderHistory);
@@ -341,6 +343,7 @@ function handleDelete(event) {
 
 function exportCsv(event) {
   event.preventDefault();
+  const format = event.submitter?.value || "csv";
   const start = $("#exportStart").value;
   const end = $("#exportEnd").value;
   $("#exportError").textContent = "";
@@ -353,20 +356,119 @@ function exportCsv(event) {
     $("#exportError").textContent = "此日期區間沒有可匯出的紀錄。";
     return;
   }
+  if (format === "json") {
+    downloadFile(
+      JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), entries }, null, 2),
+      `心晴日記_${start || "全部"}_${end || "全部"}.json`,
+      "application/json;charset=utf-8",
+    );
+    $("#exportDialog").close();
+    showToast(`已匯出 ${entries.length} 則 JSON 日記`);
+    return;
+  }
   const header = ["日期", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
   const rows = entries.map((entry) => {
     const weather = entry.weather || {};
     return [entry.localDate, entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description];
   });
   const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  downloadFile(csv, `心晴日記_${start || "全部"}_${end || "全部"}.csv`, "text/csv;charset=utf-8");
+  $("#exportDialog").close();
+  showToast(`已匯出 ${entries.length} 則 CSV 日記`);
+}
+
+function downloadFile(content, filename, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = `心晴日記_${start || "全部"}_${end || "全部"}.csv`;
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
-  $("#exportDialog").close();
-  showToast(`已匯出 ${entries.length} 則日記`);
+}
+
+async function importData(event) {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  try {
+    const text = (await file.text()).replace(/^\uFEFF/, "");
+    const rawEntries = file.name.toLowerCase().endsWith(".json")
+      ? parseJsonEntries(text)
+      : parseCsvEntries(text);
+    const entries = rawEntries.map(normalizeImportedEntry).filter(Boolean);
+    if (!entries.length) throw new Error("檔案中沒有可匯入的日記資料");
+    state.entries = [...entries, ...state.entries].sort((a, b) => b.localDate.localeCompare(a.localDate));
+    persistEntries();
+    renderEntries();
+    loadTodayEntry();
+    showToast(`已匯入 ${entries.length} 則日記`);
+  } catch (error) {
+    showToast(`匯入失敗：${error.message}`);
+  }
+}
+
+function parseJsonEntries(text) {
+  const data = JSON.parse(text);
+  const entries = Array.isArray(data) ? data : data?.entries;
+  if (!Array.isArray(entries)) throw new Error("JSON 中找不到 entries 陣列");
+  return entries;
+}
+
+function parseCsvEntries(text) {
+  const rows = parseCsv(text);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map((value) => value.trim().toLowerCase());
+  const find = (...names) => headers.findIndex((header) => names.includes(header));
+  const indexes = {
+    localDate: find("日期", "date", "localdate"), mood: find("心情", "mood"), note: find("備註", "筆記", "note"),
+    location: find("地點", "location"), temperature: find("溫度°c", "temperature"), feelsLike: find("體感°c", "feelslike"),
+    humidity: find("濕度%", "humidity"), pressure: find("氣壓hpa", "pressure"), description: find("天氣", "description"),
+  };
+  return rows.slice(1).filter((row) => row.some((cell) => cell.trim())).map((row) => {
+    const value = (key, fallback) => row[indexes[key] >= 0 ? indexes[key] : fallback] ?? "";
+    return { localDate: value("localDate", 0), mood: value("mood", 1), note: value("note", 2), weather: {
+      location: value("location", 3), temperature: value("temperature", 4), feelsLike: value("feelsLike", 5),
+      humidity: value("humidity", 6), pressure: value("pressure", 7), description: value("description", 8),
+    } };
+  });
+}
+
+function parseCsv(text) {
+  const rows = []; let row = []; let cell = ""; let quoted = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (quoted && char === '"' && text[index + 1] === '"') { cell += '"'; index += 1; }
+    else if (char === '"') quoted = !quoted;
+    else if (char === "," && !quoted) { row.push(cell); cell = ""; }
+    else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && text[index + 1] === "\n") index += 1;
+      row.push(cell); rows.push(row); row = []; cell = "";
+    } else cell += char;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  if (quoted) throw new Error("CSV 引號格式不正確");
+  return rows;
+}
+
+function normalizeImportedEntry(entry) {
+  const localDate = String(entry?.localDate || entry?.date || "").slice(0, 10);
+  const mood = String(entry?.mood || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(localDate) || !mood) return null;
+  const moodButton = $$(".mood-option").find((button) => button.dataset.mood === mood);
+  const hasWeather = entry.weather && Object.values(entry.weather).some((value) => value !== "");
+  const weather = hasWeather ? { ...entry.weather,
+    temperature: numberOrValue(entry.weather.temperature), feelsLike: numberOrValue(entry.weather.feelsLike),
+    humidity: numberOrValue(entry.weather.humidity), pressure: numberOrValue(entry.weather.pressure),
+  } : null;
+  return {
+    id: String(entry.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)),
+    createdAt: entry.createdAt || localDate, updatedAt: entry.updatedAt || localDate, localDate, mood,
+    emoji: entry.emoji || moodButton?.dataset.emoji || "🙂", note: String(entry.note || "").slice(0, 200), weather,
+  };
+}
+
+function numberOrValue(value) {
+  return value !== "" && Number.isFinite(Number(value)) ? Number(value) : value;
 }
 
 function csvCell(value) {

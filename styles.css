@@ -92,6 +92,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .secondary-button { padding: 11px 16px; border: 1px solid var(--line); background: var(--surface); }
 .secondary-button:hover { border-color: var(--accent); color: var(--accent-dark); }
 .secondary-button svg { width: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.data-actions, .export-actions { display: flex; gap: 10px; }
+.export-actions .primary-button { margin-top: 0; }
+.export-actions .secondary-button { flex: 1; }
 .entry-list, .history-list { display: grid; gap: 12px; }
 .entry-card { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .entry-emoji { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #f4efe6; font-size: 1.55rem; }
@@ -142,7 +145,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
   .mood-grid { gap: 8px; }
   .mood-option { padding: 18px 8px 14px; }
   .history-header { display: block; }
-  .history-header .secondary-button { margin-top: 24px; }
+  .history-header .data-actions { margin-top: 24px; }
   .history-list .entry-card, .entry-card { grid-template-columns: auto 1fr; }
   .entry-meta { grid-column: 2; text-align: left; }
   .modal form { padding: 32px 24px 26px; }
