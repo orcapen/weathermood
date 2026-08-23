@@ -3,6 +3,12 @@ const STORAGE = {
   entries: "weathermood.entries",
 };
 
+const GOOGLE_CLIENT_ID = "918181579161-bkgjjebb00asi87i8p16lojja03u59h0.apps.googleusercontent.com";
+const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3";
+const GOOGLE_DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
+const GOOGLE_DRIVE_BACKUP_FOLDER = "心晴日記備份";
+
 const state = {
   apiKey: localStorage.getItem(STORAGE.apiKey) || "",
   weather: null,
@@ -12,6 +18,8 @@ const state = {
   dateRange: createDateRangeState(),
   exportDateRange: createDateRangeState(),
   dateRangeContext: "history",
+  googleAccessToken: "",
+  googleTokenExpiresAt: 0,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -97,10 +105,19 @@ function bindEvents() {
   $("#apiForm").addEventListener("submit", saveApiKey);
   $("#closeApiDialog").addEventListener("click", () => $("#apiDialog").close());
   $("#openExport").addEventListener("click", () => $("#exportDialog").showModal());
-  $("#openImport").addEventListener("click", () => $("#importFile").click());
+  $("#openImport").addEventListener("click", () => $("#importDialog").showModal());
+  $("#closeImportDialog").addEventListener("click", () => $("#importDialog").close());
+  $("#importFromDevice").addEventListener("click", () => {
+    $("#importDialog").close();
+    $("#importFile").click();
+  });
+  $("#importFromDrive").addEventListener("click", openDriveBackups);
   $("#importFile").addEventListener("change", importData);
+  $("#closeDriveBackupDialog").addEventListener("click", () => $("#driveBackupDialog").close());
+  $("#refreshDriveBackups").addEventListener("click", loadDriveBackups);
+  $("#driveBackupList").addEventListener("click", importDriveBackup);
   $("#closeExportDialog").addEventListener("click", () => $("#exportDialog").close());
-  $("#exportForm").addEventListener("submit", exportCsv);
+  $("#exportForm").addEventListener("submit", exportData);
   $("#moodFilter").addEventListener("change", renderHistory);
   $("#openDateRange").addEventListener("click", () => openDateRangePicker("history"));
   $("#openExportDateRange").addEventListener("click", () => openDateRangePicker("export"));
@@ -588,9 +605,10 @@ function handleDelete(event) {
   showToast("日記已刪除");
 }
 
-function exportCsv(event) {
+async function exportData(event) {
   event.preventDefault();
   const format = event.submitter?.value || "csv";
+  const submitter = event.submitter;
   const { appliedStart: start, appliedEnd: end } = state.exportDateRange;
   $("#exportError").textContent = "";
   const entries = state.entries.filter((entry) => (!start || entry.localDate >= start) && (!end || entry.localDate <= end));
@@ -598,9 +616,24 @@ function exportCsv(event) {
     $("#exportError").textContent = "此日期區間沒有可匯出的紀錄。";
     return;
   }
+  if (format === "drive") {
+    submitter.disabled = true;
+    submitter.setAttribute("aria-busy", "true");
+    try {
+      const file = await uploadDriveBackup(entries);
+      $("#exportDialog").close();
+      showToast(`已將 ${entries.length} 則日記儲存到 Google Drive：${file.name}`);
+    } catch (error) {
+      $("#exportError").textContent = error.message;
+    } finally {
+      submitter.disabled = false;
+      submitter.removeAttribute("aria-busy");
+    }
+    return;
+  }
   if (format === "json") {
     downloadFile(
-      JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), entries }, null, 2),
+      JSON.stringify(createBackup(entries), null, 2),
       `心晴日記_${start || "全部"}_${end || "全部"}.json`,
       "application/json;charset=utf-8",
     );
@@ -617,6 +650,212 @@ function exportCsv(event) {
   downloadFile(csv, `心晴日記_${start || "全部"}_${end || "全部"}.csv`, "text/csv;charset=utf-8");
   $("#exportDialog").close();
   showToast(`已匯出 ${entries.length} 則 CSV 日記`);
+}
+
+function createBackup(entries) {
+  return { version: 1, exportedAt: new Date().toISOString(), entries };
+}
+
+function driveBackupFilename() {
+  const now = new Date();
+  const date = toLocalDate(now);
+  const time = [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map((value) => String(value).padStart(2, "0"))
+    .join("-");
+  return `心晴日記備份_${date}_${time}.json`;
+}
+
+async function requestDriveAccessToken() {
+  if (state.googleAccessToken && state.googleTokenExpiresAt > Date.now() + 60_000) {
+    return state.googleAccessToken;
+  }
+
+  const oauth = globalThis.google?.accounts?.oauth2;
+  if (!oauth) throw new Error("Google 登入服務尚未載入，請確認網路連線後再試一次。");
+
+  return new Promise((resolve, reject) => {
+    const tokenClient = oauth.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GOOGLE_DRIVE_SCOPE,
+      callback: (response) => {
+        if (response.error) {
+          reject(new Error("Google 授權失敗，請重新選擇帳號並允許雲端硬碟權限。"));
+          return;
+        }
+        if (!oauth.hasGrantedAllScopes(response, GOOGLE_DRIVE_SCOPE)) {
+          reject(new Error("未授予 Google Drive 權限，無法存取備份。"));
+          return;
+        }
+        state.googleAccessToken = response.access_token;
+        state.googleTokenExpiresAt = Date.now() + Number(response.expires_in || 3600) * 1000;
+        resolve(state.googleAccessToken);
+      },
+      error_callback: (error) => {
+        const message = error.type === "popup_closed"
+          ? "Google 登入視窗已關閉。"
+          : "無法開啟 Google 登入視窗，請允許彈出式視窗後再試一次。";
+        reject(new Error(message));
+      },
+    });
+    tokenClient.requestAccessToken();
+  });
+}
+
+async function driveRequest(url, options = {}) {
+  const accessToken = await requestDriveAccessToken();
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...options.headers,
+    },
+  });
+  if (response.status === 401) {
+    state.googleAccessToken = "";
+    state.googleTokenExpiresAt = 0;
+    throw new Error("Google 授權已過期，請再操作一次以重新登入。");
+  }
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const body = await response.json();
+      detail = body?.error?.message || "";
+    } catch {
+      // Google API did not return a JSON error body.
+    }
+    throw new Error(detail ? `Google Drive 發生錯誤：${detail}` : `Google Drive 發生錯誤（${response.status}）。`);
+  }
+  return response;
+}
+
+async function uploadDriveBackup(entries) {
+  const folder = await findDriveBackupFolder(true);
+  const name = driveBackupFilename();
+  const metadata = {
+    name,
+    mimeType: "application/json",
+    description: "心晴日記 Google Drive 備份",
+    appProperties: { app: "weathermood", formatVersion: "1" },
+    parents: [folder.id],
+  };
+  const boundary = `weathermood_${crypto.randomUUID?.() || Date.now()}`;
+  const content = JSON.stringify(createBackup(entries), null, 2);
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    JSON.stringify(metadata),
+    `\r\n--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    content,
+    `\r\n--${boundary}--`,
+  ], { type: `multipart/related; boundary=${boundary}` });
+  const response = await driveRequest(`${GOOGLE_DRIVE_UPLOAD_API}/files?uploadType=multipart&fields=id,name,webViewLink,createdTime`, {
+    method: "POST",
+    headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+    body,
+  });
+  return response.json();
+}
+
+async function findDriveBackupFolder(createIfMissing = false) {
+  const parameters = new URLSearchParams({
+    q: "trashed = false and mimeType = 'application/vnd.google-apps.folder' and appProperties has { key='app' and value='weathermood' } and appProperties has { key='type' and value='backupFolder' }",
+    spaces: "drive",
+    pageSize: "1",
+    fields: "files(id,name)",
+  });
+  const response = await driveRequest(`${GOOGLE_DRIVE_API}/files?${parameters}`);
+  const { files = [] } = await response.json();
+  if (files[0]) return files[0];
+  if (!createIfMissing) return null;
+
+  const createResponse = await driveRequest(`${GOOGLE_DRIVE_API}/files?fields=id,name`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=UTF-8" },
+    body: JSON.stringify({
+      name: GOOGLE_DRIVE_BACKUP_FOLDER,
+      mimeType: "application/vnd.google-apps.folder",
+      description: "心晴日記的 Google Drive 備份資料夾",
+      appProperties: { app: "weathermood", type: "backupFolder" },
+    }),
+  });
+  return createResponse.json();
+}
+
+async function openDriveBackups() {
+  const button = $("#importFromDrive");
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  try {
+    await requestDriveAccessToken();
+    $("#importDialog").close();
+    if (!$("#driveBackupDialog").open) $("#driveBackupDialog").showModal();
+    await loadDriveBackups();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+  }
+}
+
+async function loadDriveBackups() {
+  const status = $("#driveBackupStatus");
+  const list = $("#driveBackupList");
+  const refreshButton = $("#refreshDriveBackups");
+  status.textContent = "正在讀取備份…";
+  list.innerHTML = "";
+  refreshButton.disabled = true;
+  try {
+    const parameters = new URLSearchParams({
+      q: "trashed = false and mimeType = 'application/json' and appProperties has { key='app' and value='weathermood' }",
+      spaces: "drive",
+      orderBy: "createdTime desc",
+      pageSize: "100",
+      fields: "files(id,name,createdTime,modifiedTime,size)",
+    });
+    const response = await driveRequest(`${GOOGLE_DRIVE_API}/files?${parameters}`);
+    const { files = [] } = await response.json();
+    if (!files.length) {
+      status.textContent = "目前沒有心晴日記的 Google Drive 備份。";
+      return;
+    }
+    status.textContent = `找到 ${files.length} 份備份，選擇一份即可匯入。`;
+    list.innerHTML = files.map((file) => {
+      const createdAt = new Intl.DateTimeFormat("zh-TW", {
+        year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit",
+      }).format(new Date(file.createdTime));
+      return `<button class="drive-backup-item" type="button" data-drive-file-id="${escapeHtml(file.id)}">
+        <span class="drive-backup-name">${escapeHtml(file.name)}</span>
+        <span class="drive-backup-date">${escapeHtml(createdAt)}</span>
+        <span class="drive-backup-arrow" aria-hidden="true">›</span>
+      </button>`;
+    }).join("");
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    refreshButton.disabled = false;
+  }
+}
+
+async function importDriveBackup(event) {
+  const button = event.target.closest("[data-drive-file-id]");
+  if (!button) return;
+  const buttons = $$("#driveBackupList .drive-backup-item");
+  buttons.forEach((item) => { item.disabled = true; });
+  $("#driveBackupStatus").textContent = "正在匯入備份…";
+  try {
+    const fileId = encodeURIComponent(button.dataset.driveFileId);
+    const response = await driveRequest(`${GOOGLE_DRIVE_API}/files/${fileId}?alt=media`);
+    const text = (await response.text()).replace(/^\uFEFF/, "");
+    const entries = parseJsonEntries(text).map(normalizeImportedEntry).filter(Boolean);
+    if (!entries.length) throw new Error("備份中沒有可匯入的日記資料");
+    const added = applyImportedEntries(entries);
+    $("#driveBackupDialog").close();
+    showImportResult(added);
+  } catch (error) {
+    $("#driveBackupStatus").textContent = `匯入失敗：${error.message}`;
+  } finally {
+    buttons.forEach((item) => { item.disabled = false; });
+  }
 }
 
 function downloadFile(content, filename, type) {
@@ -639,14 +878,25 @@ async function importData(event) {
       : parseCsvEntries(text);
     const entries = rawEntries.map(normalizeImportedEntry).filter(Boolean);
     if (!entries.length) throw new Error("檔案中沒有可匯入的日記資料");
-    state.entries = [...entries, ...state.entries].sort((a, b) => b.localDate.localeCompare(a.localDate));
-    persistEntries();
-    renderEntries();
-    loadTodayEntry();
-    showToast(`已匯入 ${entries.length} 則日記`);
+    const added = applyImportedEntries(entries);
+    showImportResult(added);
   } catch (error) {
     showToast(`匯入失敗：${error.message}`);
   }
+}
+
+function applyImportedEntries(entries) {
+  const entryIds = new Set(state.entries.map((entry) => entry.id));
+  const newEntries = entries.filter((entry) => !entryIds.has(entry.id));
+  state.entries = [...newEntries, ...state.entries].sort((a, b) => b.localDate.localeCompare(a.localDate));
+  persistEntries();
+  renderEntries();
+  loadTodayEntry();
+  return newEntries.length;
+}
+
+function showImportResult(added) {
+  showToast(added ? `已匯入 ${added} 則日記` : "沒有新增日記；備份中的紀錄都已存在。");
 }
 
 function parseJsonEntries(text) {

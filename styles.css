@@ -105,8 +105,11 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .secondary-button:hover { border-color: var(--accent); color: var(--accent-dark); }
 .secondary-button svg { width: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .data-actions, .export-actions { display: flex; gap: 10px; }
+.export-actions { flex-wrap: wrap; }
 .export-actions .primary-button { margin-top: 0; }
-.export-actions .secondary-button { flex: 1; }
+.export-actions .primary-button:not(.drive-export-button), .export-actions .secondary-button { flex: 1; width: auto; }
+.export-actions .drive-export-button { flex-basis: 100%; }
+.export-actions .tester-link { flex-basis: 100%; margin: 0 0 6px; }
 .entry-list, .history-list { display: grid; gap: 12px; }
 .entry-card { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .entry-emoji { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #f4efe6; font-size: 1.55rem; }
@@ -168,6 +171,20 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .date-picker-actions .text-button { margin-left: auto; }
 .date-picker-actions .primary-button { width: auto; margin-top: 0; padding: 11px 20px; }
 .helper-link { display: block; margin-top: 18px; color: var(--accent-dark); font-size: .83rem; text-align: center; }
+.import-actions { display: grid; gap: 10px; margin-top: 22px; }
+.import-actions .primary-button { margin-top: 0; }
+.drive-backup-modal { width: min(560px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+.drive-backup-panel { position: relative; padding: 36px; }
+.drive-backup-panel > p:not(.eyebrow) { color: var(--muted); }
+.drive-backup-status { min-height: 24px; margin: 20px 0 10px; color: var(--muted); font-size: .86rem; }
+.drive-backup-list { display: grid; gap: 10px; }
+.drive-backup-item { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; width: 100%; padding: 15px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; }
+.drive-backup-item:hover { border-color: var(--accent); background: #fffaf6; }
+.drive-backup-item:disabled { opacity: .5; cursor: wait; }
+.drive-backup-name { min-width: 0; overflow: hidden; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.drive-backup-date { color: var(--muted); font-size: .78rem; }
+.drive-backup-arrow { grid-column: 2; grid-row: 1 / span 2; color: var(--accent-dark); font-size: 1.25rem; }
+.drive-refresh-button { width: 100%; margin-top: 14px; }
 .toast { position: fixed; z-index: 40; left: 50%; bottom: 105px; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 10px; background: var(--ink); color: white; font-size: .88rem; opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: .25s ease; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -195,6 +212,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
   .history-list .entry-card, .entry-card { grid-template-columns: auto 1fr; }
   .entry-meta { grid-column: 2; text-align: left; }
   .modal form { padding: 32px 24px 26px; }
+  .drive-backup-panel { padding: 32px 24px 26px; }
   .date-picker-panel { padding: 28px 20px 22px; }
 }
 

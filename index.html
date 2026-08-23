@@ -198,10 +198,38 @@
         </div>
         <p class="form-error" id="exportError" role="alert"></p>
         <div class="export-actions">
+          <button class="primary-button drive-export-button" type="submit" value="drive">儲存到 Google Drive (僅測試人員可用)</button>
+          <a class="helper-link tester-link" href="https://forms.gle/haRwsVhqzaLhZt666" target="_blank" rel="noopener noreferrer">報名測試人員 ↗</a>
           <button class="primary-button" type="submit" value="csv">下載 CSV</button>
           <button class="secondary-button" type="submit" value="json">下載 JSON</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog class="modal" id="importDialog">
+      <form method="dialog">
+        <button class="modal-close" type="button" id="closeImportDialog" aria-label="關閉">×</button>
+        <p class="eyebrow">帶回你的回憶</p>
+        <h2>匯入日記</h2>
+        <p>匯入的日記會與目前資料合併；相同 ID 的紀錄不會重複建立。</p>
+        <div class="import-actions">
+          <button class="primary-button" id="importFromDrive" type="button">從 Google Drive 匯入 (僅測試人員可用)</button>
+          <a class="helper-link tester-link" href="https://forms.gle/haRwsVhqzaLhZt666" target="_blank" rel="noopener noreferrer">報名測試人員 ↗</a>
+          <button class="secondary-button" id="importFromDevice" type="button">從這台裝置選擇檔案</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal drive-backup-modal" id="driveBackupDialog" aria-labelledby="driveBackupTitle">
+      <div class="drive-backup-panel">
+        <button class="modal-close" type="button" id="closeDriveBackupDialog" aria-label="關閉">×</button>
+        <p class="eyebrow">Google Drive</p>
+        <h2 id="driveBackupTitle">選擇備份</h2>
+        <p>只會顯示由心晴日記建立、且仍存在於你的雲端硬碟中的備份。</p>
+        <div class="drive-backup-status" id="driveBackupStatus" role="status" aria-live="polite"></div>
+        <div class="drive-backup-list" id="driveBackupList"></div>
+        <button class="secondary-button drive-refresh-button" id="refreshDriveBackups" type="button">重新整理</button>
+      </div>
     </dialog>
 
     <dialog class="modal date-picker-modal" id="dateRangeDialog" aria-labelledby="dateRangeTitle">
@@ -235,6 +263,7 @@
     <input id="importFile" type="file" accept=".csv,.json,text/csv,application/json" hidden />
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>
