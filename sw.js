@@ -1,10 +1,11 @@
-const CACHE_NAME = "weathermood-v0.8.0";
+const CACHE_NAME = "weathermood-v0.8.1";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
+  "./assets/fonts/Iansui-Regular.woff2",
   "./faveicon/favicon.ico",
   "./faveicon/favicon-16x16.png",
   "./faveicon/favicon-32x32.png",
