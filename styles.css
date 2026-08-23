@@ -64,9 +64,7 @@ h2 { margin-bottom: 6px; font-family: "Iansui", "PingFang TC", "Microsoft JhengH
 }
 .weather-card::after { content: ""; position: absolute; top: -75px; right: -50px; width: 230px; height: 230px; border: 1px solid rgb(228 107 69 / 12%); border-radius: 50%; box-shadow: 0 0 0 36px rgb(228 107 69 / 4%), 0 0 0 72px rgb(228 107 69 / 3%); pointer-events: none; }
 .weather-main { display: flex; justify-content: space-between; align-items: center; min-height: 170px; }
-.location-row { display: flex; gap: 7px; align-items: center; color: var(--muted); font-size: .92rem; }
-.location-row svg { width: 16px; fill: var(--accent); }
-.temperature { display: flex; align-items: flex-start; margin-top: 10px; line-height: 1; }
+.temperature { display: flex; align-items: flex-start; line-height: 1; }
 .temperature strong { font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: clamp(4.5rem, 14vw, 7rem); font-weight: 400; letter-spacing: -.06em; }
 .temperature span { margin: 12px 0 0 10px; font-size: 1.6rem; }
 .weather-description { margin-bottom: 0; font-weight: 700; }
@@ -79,7 +77,8 @@ h2 { margin-bottom: 6px; font-family: "Iansui", "PingFang TC", "Microsoft JhengH
 .weather-details div:first-child { padding-left: 0; }
 .weather-details div:last-child { border: 0; padding-right: 0; }
 .weather-details span { color: var(--muted); }
-.refresh-button { margin-top: 18px; }
+.weather-actions { display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; align-items: baseline; margin-top: 18px; }
+.weather-source { color: var(--muted); font-size: .75rem; }
 .text-button { padding: 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--accent-dark); font-size: .86rem; cursor: pointer; }
 .entry-section, .today-section { padding: 80px 0 12px; }
 .section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 24px; }
@@ -143,9 +142,6 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .modal h2 { font-size: 1.9rem; }
 .modal form > p:not(.eyebrow):not(.form-error) { color: var(--muted); }
 .modal-close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; color: var(--muted); font-size: 1.6rem; }
-.modal-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 22px; border-radius: 50%; background: #fae8dc; color: var(--accent); font-size: 1.7rem; }
-.input-field { display: block; margin-top: 20px; color: var(--muted); font-size: .84rem; font-weight: 700; }
-.input-field input { width: 100%; margin-top: 7px; padding: 12px 13px; }
 .form-error { min-height: 20px; margin: 8px 0 0; color: #b13c27 !important; font-size: .8rem; }
 .date-picker-modal { width: min(430px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
 .date-picker-panel { position: relative; padding: 32px; }
