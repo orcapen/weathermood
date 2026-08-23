@@ -1,5 +1,4 @@
 const STORAGE = {
-  apiKey: "weathermood.apiKey",
   entries: "weathermood.entries",
 };
 
@@ -8,11 +7,10 @@ const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3";
 const GOOGLE_DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const GOOGLE_DRIVE_BACKUP_FOLDER = "心晴日記備份";
+const WEATHER_REQUEST_TIMEOUT_MS = 12000;
 
 const state = {
-  apiKey: localStorage.getItem(STORAGE.apiKey) || "",
   weather: null,
-  position: null,
   selectedMood: null,
   entries: readEntries(),
   dateRange: createDateRangeState(),
@@ -60,6 +58,37 @@ const weatherLabels = {
   "heavy intensity rain": "大雨",
 };
 
+const weatherCodes = {
+  0: { condition: "Clear", description: "晴朗" },
+  1: { condition: "Clear", description: "晴時多雲" },
+  2: { condition: "Clouds", description: "多雲" },
+  3: { condition: "Clouds", description: "陰天" },
+  45: { condition: "Fog", description: "霧" },
+  48: { condition: "Fog", description: "霧淞" },
+  51: { condition: "Drizzle", description: "小毛毛雨" },
+  53: { condition: "Drizzle", description: "毛毛雨" },
+  55: { condition: "Drizzle", description: "大毛毛雨" },
+  56: { condition: "Drizzle", description: "小凍毛毛雨" },
+  57: { condition: "Drizzle", description: "凍毛毛雨" },
+  61: { condition: "Rain", description: "小雨" },
+  63: { condition: "Rain", description: "中雨" },
+  65: { condition: "Rain", description: "大雨" },
+  66: { condition: "Rain", description: "小凍雨" },
+  67: { condition: "Rain", description: "凍雨" },
+  71: { condition: "Snow", description: "小雪" },
+  73: { condition: "Snow", description: "中雪" },
+  75: { condition: "Snow", description: "大雪" },
+  77: { condition: "Snow", description: "雪粒" },
+  80: { condition: "Rain", description: "小陣雨" },
+  81: { condition: "Rain", description: "陣雨" },
+  82: { condition: "Rain", description: "強陣雨" },
+  85: { condition: "Snow", description: "小陣雪" },
+  86: { condition: "Snow", description: "強陣雪" },
+  95: { condition: "Thunderstorm", description: "雷雨" },
+  96: { condition: "Thunderstorm", description: "雷雨伴隨小冰雹" },
+  99: { condition: "Thunderstorm", description: "雷雨伴隨大冰雹" },
+};
+
 const moodLabels = { 1: "低落", 2: "不好", 3: "平靜", 4: "不錯", 5: "開心" };
 const legacyMoodScores = { 低落: 1, 不好: 2, 平靜: 3, 不錯: 4, 開心: 5 };
 
@@ -85,12 +114,8 @@ function init() {
   renderEntries();
   loadTodayEntry();
   registerServiceWorker();
-
-  if (!state.apiKey) {
-    $("#apiDialog").showModal();
-  } else {
-    requestLocationAndWeather();
-  }
+  localStorage.removeItem("weathermood.apiKey");
+  requestLocationAndWeather();
 }
 
 function bindEvents() {
@@ -101,9 +126,6 @@ function bindEvents() {
   });
   $("#saveEntry").addEventListener("click", saveEntry);
   $("#refreshWeather").addEventListener("click", requestLocationAndWeather);
-  $("#settingsButton").addEventListener("click", openApiDialog);
-  $("#apiForm").addEventListener("submit", saveApiKey);
-  $("#closeApiDialog").addEventListener("click", () => $("#apiDialog").close());
   $("#openExport").addEventListener("click", () => $("#exportDialog").showModal());
   $("#openImport").addEventListener("click", () => $("#importDialog").showModal());
   $("#closeImportDialog").addEventListener("click", () => $("#importDialog").close());
@@ -144,33 +166,6 @@ function route() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function openApiDialog() {
-  $("#apiKeyInput").value = state.apiKey;
-  $("#apiError").textContent = "";
-  $("#apiDialog").showModal();
-}
-
-function closeApiDialog() {
-  if (!state.apiKey) {
-    $("#apiError").textContent = "需要 API key 才能取得天氣。";
-    return;
-  }
-  $("#apiDialog").close();
-}
-
-function saveApiKey(event) {
-  event.preventDefault();
-  const key = $("#apiKeyInput").value.trim();
-  if (!key) {
-    $("#apiError").textContent = "請輸入 API key。";
-    return;
-  }
-  state.apiKey = key;
-  localStorage.setItem(STORAGE.apiKey, key);
-  $("#apiDialog").close();
-  requestLocationAndWeather();
-}
-
 function requestLocationAndWeather() {
   setWeatherLoading();
   if (!navigator.geolocation) {
@@ -180,7 +175,6 @@ function requestLocationAndWeather() {
 
   navigator.geolocation.getCurrentPosition(
     ({ coords }) => {
-      state.position = { latitude: coords.latitude, longitude: coords.longitude };
       fetchWeather(coords.latitude, coords.longitude);
     },
     (error) => {
@@ -189,44 +183,64 @@ function requestLocationAndWeather() {
         : "目前無法取得位置，請稍後再試。";
       showWeatherError(message);
     },
-    { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 },
+    { enableHighAccuracy: false, timeout: WEATHER_REQUEST_TIMEOUT_MS, maximumAge: 300000 },
   );
 }
 
 async function fetchWeather(latitude, longitude) {
   const params = new URLSearchParams({
-    lat: latitude,
-    lon: longitude,
-    appid: state.apiKey,
-    units: "metric",
-    lang: "zh_tw",
+    latitude,
+    longitude,
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,weather_code",
   });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), WEATHER_REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?${params}`);
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { signal: controller.signal });
     if (!response.ok) {
-      if (response.status === 401) throw new Error("API key 無效或尚未啟用，請重新設定。");
       throw new Error("天氣服務暫時無法回應，請稍後再試。");
     }
     const data = await response.json();
+    const current = data.current;
+    const values = [
+      current?.temperature_2m,
+      current?.apparent_temperature,
+      current?.relative_humidity_2m,
+      current?.pressure_msl,
+      current?.weather_code,
+    ];
+    if (!values.every(Number.isFinite)) {
+      throw new Error("天氣資料格式不完整，請稍後再試。");
+    }
+    const weather = weatherCodes[current.weather_code] || {
+      condition: "Clouds",
+      description: "天氣狀況未知",
+    };
     state.weather = {
-      location: data.name || "目前位置",
-      temperature: Math.round(data.main.temp),
-      feelsLike: Math.round(data.main.feels_like),
-      humidity: data.main.humidity,
-      pressure: data.main.pressure,
-      condition: data.weather[0]?.main || "Clouds",
-      description: data.weather[0]?.description || "",
+      location: "",
+      latitude,
+      longitude,
+      temperature: Math.round(current.temperature_2m),
+      feelsLike: Math.round(current.apparent_temperature),
+      humidity: current.relative_humidity_2m,
+      pressure: Math.round(current.pressure_msl),
+      condition: weather.condition,
+      description: weather.description,
     };
     renderWeather();
   } catch (error) {
-    showWeatherError(error.message);
+    const message = error.name === "AbortError"
+      ? "天氣服務回應逾時，請稍後再試。"
+      : error.message;
+    showWeatherError(message);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 function setWeatherLoading() {
   setEntryAvailability(false);
-  $("#locationName").textContent = "正在取得位置…";
   $("#weatherDescription").textContent = "正在讀取天氣";
   setWeatherSymbol("cloud", "is-loading");
   $("#refreshWeather").disabled = true;
@@ -234,7 +248,6 @@ function setWeatherLoading() {
 
 function renderWeather() {
   const weather = state.weather;
-  $("#locationName").textContent = weather.location;
   $("#temperature").textContent = weather.temperature;
   $("#feelsLike").textContent = `${weather.feelsLike}°`;
   $("#humidity").textContent = `${weather.humidity}%`;
@@ -247,8 +260,10 @@ function renderWeather() {
 
 function showWeatherError(message) {
   state.weather = null;
-  $("#locationName").textContent = "無法取得天氣";
   $("#temperature").textContent = "--";
+  $("#feelsLike").textContent = "--°";
+  $("#humidity").textContent = "--%";
+  $("#pressure").textContent = "---- hPa";
   $("#weatherDescription").textContent = message;
   setWeatherSymbol("cloud", "is-error");
   $("#refreshWeather").disabled = false;
@@ -583,9 +598,11 @@ function formatLongDate(value) {
 function entryCard(entry) {
   const date = new Date(entry.createdAt);
   const weather = entry.weather;
-  const weatherText = weather
-    ? `${escapeHtml(weather.location)} · ${weather.temperature}°C · ${escapeHtml(weatherLabels[weather.description] || weather.description)}`
-    : "未記錄天氣";
+  const weatherParts = weather ? [
+    weather.temperature !== "" && weather.temperature != null ? `${escapeHtml(weather.temperature)}°C` : "",
+    weather.description ? escapeHtml(weatherLabels[weather.description] || weather.description) : "",
+  ].filter(Boolean) : [];
+  const weatherText = weatherParts.join(" · ") || "未記錄天氣";
   const note = entry.note ? escapeHtml(entry.note) : "沒有留下備註";
   const dateText = new Intl.DateTimeFormat("zh-TW", { month: "short", day: "numeric", weekday: "short" }).format(date);
   return `<article class="entry-card">
@@ -641,10 +658,13 @@ async function exportData(event) {
     showToast(`已匯出 ${entries.length} 則 JSON 日記`);
     return;
   }
-  const header = ["日期", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
+  const header = ["日期", "心情", "備註", "地點", "緯度", "經度", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
   const rows = entries.map((entry) => {
     const weather = entry.weather || {};
-    return [entry.localDate, entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description];
+    return [
+      entry.localDate, entry.mood, entry.note, weather.location, weather.latitude, weather.longitude,
+      weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description,
+    ];
   });
   const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
   downloadFile(csv, `心晴日記_${start || "全部"}_${end || "全部"}.csv`, "text/csv;charset=utf-8");
@@ -913,14 +933,19 @@ function parseCsvEntries(text) {
   const find = (...names) => headers.findIndex((header) => names.includes(header));
   const indexes = {
     localDate: find("日期", "date", "localdate"), mood: find("心情", "mood"), note: find("備註", "筆記", "note"),
-    location: find("地點", "location"), temperature: find("溫度°c", "temperature"), feelsLike: find("體感°c", "feelslike"),
+    location: find("地點", "location"), latitude: find("緯度", "latitude", "lat"), longitude: find("經度", "longitude", "lon", "lng"),
+    temperature: find("溫度°c", "temperature"), feelsLike: find("體感°c", "feelslike"),
     humidity: find("濕度%", "humidity"), pressure: find("氣壓hpa", "pressure"), description: find("天氣", "description"),
   };
   return rows.slice(1).filter((row) => row.some((cell) => cell.trim())).map((row) => {
-    const value = (key, fallback) => row[indexes[key] >= 0 ? indexes[key] : fallback] ?? "";
+    const value = (key, fallback = -1) => {
+      const index = indexes[key] >= 0 ? indexes[key] : fallback;
+      return index >= 0 ? row[index] ?? "" : "";
+    };
     return { localDate: value("localDate", 0), mood: value("mood", 1), note: value("note", 2), weather: {
-      location: value("location", 3), temperature: value("temperature", 4), feelsLike: value("feelsLike", 5),
-      humidity: value("humidity", 6), pressure: value("pressure", 7), description: value("description", 8),
+      location: value("location", 3), latitude: value("latitude"), longitude: value("longitude"),
+      temperature: value("temperature", 6), feelsLike: value("feelsLike", 7), humidity: value("humidity", 8),
+      pressure: value("pressure", 9), description: value("description", 10),
     } };
   });
 }
@@ -949,6 +974,7 @@ function normalizeImportedEntry(entry) {
   const moodButton = $$(".mood-option").find((button) => Number(button.dataset.mood) === mood);
   const hasWeather = entry.weather && Object.values(entry.weather).some((value) => value !== "");
   const weather = hasWeather ? { ...entry.weather,
+    latitude: numberOrValue(entry.weather.latitude), longitude: numberOrValue(entry.weather.longitude),
     temperature: numberOrValue(entry.weather.temperature), feelsLike: numberOrValue(entry.weather.feelsLike),
     humidity: numberOrValue(entry.weather.humidity), pressure: numberOrValue(entry.weather.pressure),
   } : null;

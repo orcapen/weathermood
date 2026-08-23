@@ -4,8 +4,8 @@
 
 ## 功能
 
-- 使用瀏覽器定位與 OpenWeatherMap 顯示目前天氣
-- 記錄心情、備註與當下天氣，資料保存在瀏覽器 `localStorage`
+- 使用瀏覽器定位與 [Open-Meteo](https://open-meteo.com/) 顯示目前天氣，不需 API key
+- 記錄心情、備註、座標與當下天氣，資料保存在瀏覽器 `localStorage`
 - 首頁顯示當日紀錄，日記頁顯示所有卡片
 - 依心情篩選，並可選日期區間匯出 UTF-8 CSV 或 JSON
 - 使用 Google Identity Services 將可見的 JSON 備份匯出至 Google Drive，或從 Drive 匯入
@@ -19,7 +19,7 @@ PWA、定位與 Service Worker 需要安全來源，請勿直接以 `file://` �
 uv run python -m http.server 5500
 ```
 
-開啟 `http://localhost:5500` 後，首次使用請輸入 [OpenWeatherMap API key](https://openweathermap.org/api) 並允許瀏覽器取得位置。
+開啟 `http://localhost:5500` 後，允許瀏覽器取得位置即可使用。緯度與經度會用來查詢當下天氣並保存於日記，匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標；應用程式不會解析或顯示地名。
 
 ## Google Drive 備份
 
@@ -37,7 +37,9 @@ Google Cloud 專案需完成以下設定：
 
 ## 資料與隱私
 
-API key 與日記只保存在目前瀏覽器的 `localStorage`，不會傳送到自建後端；API key 僅用於直接呼叫 OpenWeatherMap。
+日記只保存在目前瀏覽器的 `localStorage`，不會傳送到自建後端。瀏覽器取得的緯度與經度會直接傳送至 Open-Meteo 查詢天氣，並與當下天氣一起寫入日記；匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標。
+
+天氣資料由 [Open-Meteo](https://open-meteo.com/) 提供。
 
 ## 授權
 
