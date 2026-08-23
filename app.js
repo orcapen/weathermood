@@ -1,7 +1,8 @@
 const STORAGE = {
-  apiKey: "weathermood.apiKey",
   entries: "weathermood.entries",
 };
+
+const LEGACY_API_KEY_STORAGE = "weathermood.apiKey";
 
 const GOOGLE_CLIENT_ID = "918181579161-bkgjjebb00asi87i8p16lojja03u59h0.apps.googleusercontent.com";
 const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
@@ -10,7 +11,6 @@ const GOOGLE_DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const GOOGLE_DRIVE_BACKUP_FOLDER = "心晴日記備份";
 
 const state = {
-  apiKey: localStorage.getItem(STORAGE.apiKey) || "",
   weather: null,
   position: null,
   selectedMood: null,
@@ -79,6 +79,11 @@ function init() {
     month: "long", day: "numeric", weekday: "long",
   }).format(new Date());
 
+  try {
+    localStorage.removeItem(LEGACY_API_KEY_STORAGE);
+  } catch {
+    // 瀏覽器封鎖 storage 時仍繼續載入應用程式。
+  }
   migrateStoredMoods();
   bindEvents();
   route();
@@ -86,11 +91,7 @@ function init() {
   loadTodayEntry();
   registerServiceWorker();
 
-  if (!state.apiKey) {
-    $("#apiDialog").showModal();
-  } else {
-    requestLocationAndWeather();
-  }
+  requestLocationAndWeather();
 }
 
 function bindEvents() {
@@ -101,9 +102,6 @@ function bindEvents() {
   });
   $("#saveEntry").addEventListener("click", saveEntry);
   $("#refreshWeather").addEventListener("click", requestLocationAndWeather);
-  $("#settingsButton").addEventListener("click", openApiDialog);
-  $("#apiForm").addEventListener("submit", saveApiKey);
-  $("#closeApiDialog").addEventListener("click", () => $("#apiDialog").close());
   $("#openExport").addEventListener("click", () => $("#exportDialog").showModal());
   $("#openImport").addEventListener("click", () => $("#importDialog").showModal());
   $("#closeImportDialog").addEventListener("click", () => $("#importDialog").close());
@@ -144,33 +142,6 @@ function route() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function openApiDialog() {
-  $("#apiKeyInput").value = state.apiKey;
-  $("#apiError").textContent = "";
-  $("#apiDialog").showModal();
-}
-
-function closeApiDialog() {
-  if (!state.apiKey) {
-    $("#apiError").textContent = "需要 API key 才能取得天氣。";
-    return;
-  }
-  $("#apiDialog").close();
-}
-
-function saveApiKey(event) {
-  event.preventDefault();
-  const key = $("#apiKeyInput").value.trim();
-  if (!key) {
-    $("#apiError").textContent = "請輸入 API key。";
-    return;
-  }
-  state.apiKey = key;
-  localStorage.setItem(STORAGE.apiKey, key);
-  $("#apiDialog").close();
-  requestLocationAndWeather();
-}
-
 function requestLocationAndWeather() {
   setWeatherLoading();
   if (!navigator.geolocation) {
@@ -197,30 +168,46 @@ async function fetchWeather(latitude, longitude) {
   const params = new URLSearchParams({
     lat: latitude,
     lon: longitude,
-    appid: state.apiKey,
-    units: "metric",
-    lang: "zh_tw",
   });
 
   try {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?${params}`);
+    const response = await fetch(`/api/weather?${params}`, {
+      headers: { Accept: "application/json" },
+    });
     if (!response.ok) {
-      if (response.status === 401) throw new Error("API key 無效或尚未啟用，請重新設定。");
-      throw new Error("天氣服務暫時無法回應，請稍後再試。");
+      let message = "天氣服務暫時無法回應，請稍後再試。";
+      try {
+        const errorData = await response.json();
+        if (typeof errorData?.error?.message === "string") message = errorData.error.message;
+      } catch {
+        // 非 JSON 錯誤回應仍使用安全的通用訊息。
+      }
+      throw new Error(message);
     }
-    const data = await response.json();
-    state.weather = {
-      location: data.name || "目前位置",
-      temperature: Math.round(data.main.temp),
-      feelsLike: Math.round(data.main.feels_like),
-      humidity: data.main.humidity,
-      pressure: data.main.pressure,
-      condition: data.weather[0]?.main || "Clouds",
-      description: data.weather[0]?.description || "",
-    };
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("天氣服務回傳了無法辨識的資料。");
+    }
+    if (
+      typeof data?.location !== "string"
+      || !Number.isFinite(data.temperature)
+      || !Number.isFinite(data.feelsLike)
+      || !Number.isFinite(data.humidity)
+      || !Number.isFinite(data.pressure)
+      || typeof data.condition !== "string"
+      || typeof data.description !== "string"
+    ) {
+      throw new Error("天氣服務回傳的資料不完整。");
+    }
+    state.weather = data;
     renderWeather();
   } catch (error) {
-    showWeatherError(error.message);
+    const message = error instanceof Error
+      ? error.message
+      : "天氣服務暫時無法回應，請稍後再試。";
+    showWeatherError(message);
   }
 }
 

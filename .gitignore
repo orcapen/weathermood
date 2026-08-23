@@ -1,2 +1,9 @@
 concept.md
 concept.png
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+!.env.example
+.wrangler/

@@ -1,4 +1,4 @@
-const CACHE_NAME = "weathermood-v0.9.1";
+const CACHE_NAME = "weathermood-v0.10.0";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -37,7 +37,8 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
+  const isApiRequest = url.pathname === "/api" || url.pathname.startsWith("/api/");
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || isApiRequest) return;
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
       const copy = response.clone();

@@ -24,10 +24,6 @@
           <img class="brand-mark" src="faveicon/favicon-32x32.png" alt="" width="32" height="32" />
           <span>心晴日記</span>
         </a>
-        <button class="icon-button" id="settingsButton" type="button" aria-label="設定 API Key">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Zm8-3.4c0-.5-.1-1-.2-1.5l2-1.6-2-3.5-2.5 1a8.9 8.9 0 0 0-2.6-1.5L14.3 2h-4.1l-.4 2.9c-.9.3-1.7.8-2.5 1.5l-2.6-1-2 3.5 2.1 1.6a8.7 8.7 0 0 0 0 3l-2.1 1.6 2 3.5 2.6-1a8.9 8.9 0 0 0 2.5 1.5l.4 2.9h4.1l.4-2.9c.9-.3 1.8-.8 2.6-1.5l2.5 1 2-3.5-2-1.6c.1-.5.2-1 .2-1.5Z"/></svg>
-          <span>設定 API Key</span>
-        </button>
       </header>
 
       <main>
@@ -165,22 +161,6 @@
         </a>
       </nav>
     </div>
-
-    <dialog class="modal" id="apiDialog">
-      <form method="dialog" id="apiForm">
-        <button class="modal-close" type="button" id="closeApiDialog" aria-label="關閉">×</button>
-        <span class="modal-icon">⌁</span>
-        <p class="eyebrow">開始之前</p>
-        <h2>連接你的天氣資料</h2>
-        <p>請輸入 OpenWeatherMap API key。它只會儲存在這台裝置的瀏覽器中。</p>
-        <label class="input-field">API key
-          <input id="apiKeyInput" type="password" autocomplete="off" required placeholder="貼上 API key" />
-        </label>
-        <p class="form-error" id="apiError" role="alert"></p>
-        <button class="primary-button" type="submit">儲存並取得天氣</button>
-        <a class="helper-link" href="https://openweathermap.org/api" target="_blank" rel="noreferrer">還沒有 API key？前往免費申請 ↗</a>
-      </form>
-    </dialog>
 
     <dialog class="modal" id="exportDialog">
       <form method="dialog" id="exportForm">

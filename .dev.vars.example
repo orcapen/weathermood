@@ -1,0 +1,2 @@
+# 複製為 .dev.vars，再填入本機測試用的 OpenWeatherMap API key。
+WEATHER_API_KEY="replace-with-your-openweathermap-api-key"
