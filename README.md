@@ -19,7 +19,7 @@ PWA、定位與 Service Worker 需要安全來源，請勿直接以 `file://` �
 uv run python -m http.server 5500
 ```
 
-開啟 `http://localhost:5500` 後，允許瀏覽器取得位置即可使用；位置只用來查詢當下天氣，不會解析或顯示地名。
+開啟 `http://localhost:5500` 後，允許瀏覽器取得位置即可使用。緯度與經度會用來查詢當下天氣並保存於日記，匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標；應用程式不會解析或顯示地名。
 
 ## Google Drive 備份
 

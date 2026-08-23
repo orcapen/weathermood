@@ -7,6 +7,7 @@ const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3";
 const GOOGLE_DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const GOOGLE_DRIVE_BACKUP_FOLDER = "心晴日記備份";
+const WEATHER_REQUEST_TIMEOUT_MS = 12000;
 
 const state = {
   weather: null,
@@ -182,7 +183,7 @@ function requestLocationAndWeather() {
         : "目前無法取得位置，請稍後再試。";
       showWeatherError(message);
     },
-    { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 },
+    { enableHighAccuracy: false, timeout: WEATHER_REQUEST_TIMEOUT_MS, maximumAge: 300000 },
   );
 }
 
@@ -192,9 +193,11 @@ async function fetchWeather(latitude, longitude) {
     longitude,
     current: "temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,weather_code",
   });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), WEATHER_REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { signal: controller.signal });
     if (!response.ok) {
       throw new Error("天氣服務暫時無法回應，請稍後再試。");
     }
@@ -227,7 +230,12 @@ async function fetchWeather(latitude, longitude) {
     };
     renderWeather();
   } catch (error) {
-    showWeatherError(error.message);
+    const message = error.name === "AbortError"
+      ? "天氣服務回應逾時，請稍後再試。"
+      : error.message;
+    showWeatherError(message);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -930,9 +938,12 @@ function parseCsvEntries(text) {
     humidity: find("濕度%", "humidity"), pressure: find("氣壓hpa", "pressure"), description: find("天氣", "description"),
   };
   return rows.slice(1).filter((row) => row.some((cell) => cell.trim())).map((row) => {
-    const value = (key, fallback) => row[indexes[key] >= 0 ? indexes[key] : fallback] ?? "";
+    const value = (key, fallback = -1) => {
+      const index = indexes[key] >= 0 ? indexes[key] : fallback;
+      return index >= 0 ? row[index] ?? "" : "";
+    };
     return { localDate: value("localDate", 0), mood: value("mood", 1), note: value("note", 2), weather: {
-      location: value("location", 3), latitude: value("latitude", 4), longitude: value("longitude", 5),
+      location: value("location", 3), latitude: value("latitude"), longitude: value("longitude"),
       temperature: value("temperature", 6), feelsLike: value("feelsLike", 7), humidity: value("humidity", 8),
       pressure: value("pressure", 9), description: value("description", 10),
     } };
