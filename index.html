@@ -11,7 +11,7 @@
     <link rel="icon" href="faveicon/favicon-16x16.png" type="image/png" sizes="16x16" />
     <link rel="apple-touch-icon" href="faveicon/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
-    <title>心晴日記</title>
+    <title>心晴日記 Beta</title>
   </head>
   <body>
     <div class="app-shell">
@@ -22,13 +22,13 @@
         </a>
         <a class="brand" href="#home" aria-label="心晴日記首頁">
           <img class="brand-mark" src="faveicon/favicon-32x32.png" alt="" width="32" height="32" />
-          <span>心晴日記</span>
+          <span>心晴日記 Beta</span>
         </a>
       </header>
 
       <p class="beta-notice">
         <span class="beta-notice-icon" aria-hidden="true">⚠️</span>
-        <span>本服務目前為測試版本，資料可能因版本更新而遺失，請定期備份重要內容。</span>
+        <span>本服務目前為測試版本，資料可能因版本更新而遺失，<br>請定期備份重要內容。</span>
       </p>
 
       <main>
@@ -71,6 +71,7 @@
               <div>
                 <p class="eyebrow">此刻的你</p>
                 <h2 id="moodTitle">選一個最靠近的心情</h2>
+                <p class="entry-subtitle">資料存在你的瀏覽器中，不會傳送到外部伺服器。</p>
               </div>
               <span class="step-label">1 / 2</span>
             </div>
@@ -97,6 +98,10 @@
               <span class="note-label"><span>留下一點什麼</span><span id="noteCount">0 / 200</span></span>
               <textarea id="noteInput" maxlength="200" rows="4" placeholder="取得位置與天氣後即可開始記錄。" disabled></textarea>
             </label>
+            <p class="entry-hint">
+              <span class="entry-hint-icon" aria-hidden="true">💡</span>
+              <span>今天還沒過完，心情可能會變。<strong>一天一筆紀錄</strong>，隨時都可以改。</span>
+            </p>
             <button class="primary-button" id="saveEntry" type="button" disabled>
               <span>收進今天的日記</span><span aria-hidden="true">→</span>
             </button>
