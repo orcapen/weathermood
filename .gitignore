@@ -1,2 +1,34 @@
+# 設計草稿
 concept.md
 concept.png
+
+# 機密資料（Wrangler 本地環境變數）
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+
+# Cloudflare / Wrangler 本地狀態
+.wrangler/
+dist/
+.mf/
+
+# 相依套件
+node_modules/
+
+# 日誌
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 作業系統
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 編輯器
+.vscode/
+.idea/
+*.swp
