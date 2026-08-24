@@ -22,11 +22,17 @@
         </a>
         <a class="brand" href="#home" aria-label="心晴日記首頁">
           <img class="brand-mark" src="faveicon/favicon-32x32.png" alt="" width="32" height="32" />
-          <span>心晴日記</span>
+          <span>心晴日記 Beta版</span>
         </a>
       </header>
 
       <main>
+        <p class="beta-notice" id="betaNotice" role="note">
+          <span class="beta-notice-mark" aria-hidden="true">⚠️</span>
+          <span>此日記為測試版，資料可能會遺失，請勿用於重要紀錄，並定期匯出。</span>
+          <button class="beta-notice-close" id="dismissBetaNotice" type="button" aria-label="關閉測試版提醒">×</button>
+        </p>
+
         <section class="view active" id="homeView" aria-labelledby="homeTitle">
           <div class="hero-copy">
             <p class="eyebrow" id="todayDate">今天</p>

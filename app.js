@@ -1,5 +1,6 @@
 const STORAGE = {
   entries: "weathermood.entries",
+  betaNoticeDismissed: "weathermood.betaNoticeDismissed",
 };
 
 const LEGACY_API_KEY_STORAGE = "weathermood.apiKey";
@@ -85,6 +86,7 @@ function init() {
     // 瀏覽器封鎖 storage 時仍繼續載入應用程式。
   }
   migrateStoredMoods();
+  restoreBetaNotice();
   bindEvents();
   route();
   renderEntries();
@@ -103,6 +105,7 @@ function bindEvents() {
   });
   $("#saveEntry").addEventListener("click", saveEntry);
   $("#refreshWeather").addEventListener("click", requestLocationAndWeather);
+  $("#dismissBetaNotice").addEventListener("click", dismissBetaNotice);
   $("#openExport").addEventListener("click", () => $("#exportDialog").showModal());
   $("#openImport").addEventListener("click", () => $("#importDialog").showModal());
   $("#closeImportDialog").addEventListener("click", () => $("#importDialog").close());
@@ -426,6 +429,25 @@ function loadTodayEntry() {
 function updateSaveButton(isUpdate) {
   const label = $("#saveEntry span:first-child");
   if (label) label.textContent = isUpdate ? "更新今天的日記" : "儲存今天的日記";
+}
+
+function restoreBetaNotice() {
+  try {
+    if (localStorage.getItem(STORAGE.betaNoticeDismissed) === "1") {
+      $("#betaNotice").hidden = true;
+    }
+  } catch {
+    // 瀏覽器封鎖 storage 時仍顯示提醒。
+  }
+}
+
+function dismissBetaNotice() {
+  $("#betaNotice").hidden = true;
+  try {
+    localStorage.setItem(STORAGE.betaNoticeDismissed, "1");
+  } catch {
+    // 無法保存時只在這次瀏覽中隱藏。
+  }
 }
 
 function readEntries() {
