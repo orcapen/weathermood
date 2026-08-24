@@ -376,7 +376,11 @@ function saveEntry() {
     mood: state.selectedMood.mood,
     emoji: state.selectedMood.emoji,
     note: $("#noteInput").value.trim(),
-    weather: state.weather ? { ...state.weather } : null,
+    weather: state.weather ? {
+      ...state.weather,
+      longitude: state.position?.longitude ?? null,
+      latitude: state.position?.latitude ?? null,
+    } : null,
   };
   if (existingIndex === -1) {
     state.entries.unshift(entry);
@@ -748,10 +752,10 @@ async function exportData(event) {
     showToast(`已匯出 ${entries.length} 則 JSON 日記`);
     return;
   }
-  const header = ["日期", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
+  const header = ["日期", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣", "經度", "緯度"];
   const rows = entries.map((entry) => {
     const weather = entry.weather || {};
-    return [entry.localDate, entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description];
+    return [entry.localDate, entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description, weather.longitude, weather.latitude];
   });
   const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
   downloadFile(csv, `心晴日記_${start || "全部"}_${end || "全部"}.csv`, "text/csv;charset=utf-8");
@@ -1022,12 +1026,14 @@ function parseCsvEntries(text) {
     localDate: find("日期", "date", "localdate"), mood: find("心情", "mood"), note: find("備註", "筆記", "note"),
     location: find("地點", "location"), temperature: find("溫度°c", "temperature"), feelsLike: find("體感°c", "feelslike"),
     humidity: find("濕度%", "humidity"), pressure: find("氣壓hpa", "pressure"), description: find("天氣", "description"),
+    longitude: find("經度", "longitude", "lon", "lng"), latitude: find("緯度", "latitude", "lat"),
   };
   return rows.slice(1).filter((row) => row.some((cell) => cell.trim())).map((row) => {
     const value = (key, fallback) => row[indexes[key] >= 0 ? indexes[key] : fallback] ?? "";
     return { localDate: value("localDate", 0), mood: value("mood", 1), note: value("note", 2), weather: {
       location: value("location", 3), temperature: value("temperature", 4), feelsLike: value("feelsLike", 5),
       humidity: value("humidity", 6), pressure: value("pressure", 7), description: value("description", 8),
+      longitude: value("longitude", 9), latitude: value("latitude", 10),
     } };
   });
 }
@@ -1058,6 +1064,7 @@ function normalizeImportedEntry(entry) {
   const weather = hasWeather ? { ...entry.weather,
     temperature: numberOrValue(entry.weather.temperature), feelsLike: numberOrValue(entry.weather.feelsLike),
     humidity: numberOrValue(entry.weather.humidity), pressure: numberOrValue(entry.weather.pressure),
+    longitude: coordinateOrNull(entry.weather.longitude), latitude: coordinateOrNull(entry.weather.latitude),
   } : null;
   return {
     id: String(entry.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)),
@@ -1068,6 +1075,10 @@ function normalizeImportedEntry(entry) {
 
 function numberOrValue(value) {
   return value !== "" && Number.isFinite(Number(value)) ? Number(value) : value;
+}
+
+function coordinateOrNull(value) {
+  return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
 function csvCell(value) {
