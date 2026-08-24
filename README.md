@@ -85,6 +85,15 @@ Google Cloud 專案需完成以下設定：
 
 應用程式會在「我的雲端硬碟」建立並重用可見的 `心晴日記備份` 資料夾。備份會以 `心晴日記備份_YYYY-MM-DD_HH-mm-ss.json` 儲存在其中，因此使用者可直接看到、下載或刪除。匯入清單只顯示由此應用程式建立的備份；舊版曾建立在根目錄的備份仍可匯入。
 
+## 匯出檔案存放位置
+
+CSV／JSON 匯出是透過瀏覽器標準下載機制完成（產生 Blob 後觸發 `<a download>`），應用程式無法指定或得知實際存放路徑，會依裝置與瀏覽器落在下列位置：
+
+- **Android（Chrome 等）**：存到「下載」資料夾（`Download/`），可在「檔案」App 或瀏覽器的下載紀錄中找到，檔名為 `心晴日記_起始日_結束日.csv`（或 `.json`）。
+- **iPhone / iPad（Safari）**：會先跳出下載確認提示，確認後存到「檔案」App 的「下載項目」（依 iCloud Drive 或「我的 iPhone」設定而定），也可點 Safari 網址列旁的下載圖示直接開啟。
+- **iOS 上的 Chrome**：存到「檔案」App 的「我的 iPhone」→ Chrome → Downloads。
+- **以 PWA 方式安裝（加入主畫面）**：舊版 iOS（16.4 以前）在獨立視窗模式下觸發下載可能沒有反應。若匯出按下後沒有動靜，請改用 Safari 直接開啟網站再匯出。
+
 ## 資料與隱私
 
 日記仍只保存在目前瀏覽器的 `localStorage`；匯入、匯出與 Google Drive 備份流程不變。舊版曾保存的 `weathermood.apiKey` 會在新版啟動時自動移除。部署環境的 OpenWeatherMap API key 只存在 Cloudflare Secret；本機測試 key 只放在 Git 已忽略的 `.dev.vars`。Function 不會將 key 寫入 response 或 log。

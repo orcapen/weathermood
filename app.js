@@ -752,7 +752,7 @@ async function exportData(event) {
     showToast(`已匯出 ${entries.length} 則 JSON 日記`);
     return;
   }
-  const header = ["日期", "心情", "備註", "地點", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣", "經度", "緯度"];
+  const header = ["日期", "心情", "備註", "地點", "緯度", "經度", "溫度°C", "體感°C", "濕度%", "氣壓hPa", "天氣"];
   const rows = entries.map((entry) => {
     const weather = entry.weather || {};
     return [entry.localDate, entry.mood, entry.note, weather.location, weather.temperature, weather.feelsLike, weather.humidity, weather.pressure, weather.description, weather.longitude, weather.latitude];
