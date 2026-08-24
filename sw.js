@@ -1,4 +1,4 @@
-const CACHE_NAME = "weathermood-v0.10.3";
+const CACHE_NAME = "weathermood-v0.11.0";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -35,14 +35,36 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// 程式碼類資源改用 network-first，避免改版後仍執行舊的 app.js / styles.css。
+const isCodeAsset = (request, url) =>
+  request.mode === "navigate" || /\.(?:js|css|webmanifest)$/.test(url.pathname);
+
+const putIfOk = (request, response) => {
+  if (!response || !response.ok || response.type !== "basic") return response;
+  const copy = response.clone();
+  caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+  return response;
+};
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  if (isCodeAsset(event.request, url)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => putIfOk(event.request, response))
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))),
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-      return response;
-    }).catch(() => caches.match("./index.html"))),
+    caches.match(event.request).then((cached) =>
+      cached ||
+      fetch(event.request)
+        .then((response) => putIfOk(event.request, response))
+        .catch(() => caches.match("./index.html")),
+    ),
   );
 });

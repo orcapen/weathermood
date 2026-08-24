@@ -21,6 +21,28 @@ uv run python -m http.server 5500
 
 開啟 `http://localhost:5500` 後，允許瀏覽器取得位置即可使用。緯度與經度會用來查詢當下天氣並保存於日記，匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標；應用程式不會解析或顯示地名。
 
+## 匯出檔案存放位置
+
+匯出 CSV 或 JSON 時，應用程式是以瀏覽器的一般下載流程產生檔案，**不會**自行選擇資料夾，因此檔案會存到「你目前瀏覽器設定的下載位置」：
+
+| 平台 | 預設位置 |
+| --- | --- |
+| Windows | `C:\Users\<使用者名稱>\Downloads` |
+| macOS | `/Users/<使用者名稱>/Downloads` |
+| Android（Chrome） | 內部儲存空間的 `Download` 資料夾，可用「檔案」App 開啟 |
+| iOS（Safari） | 「檔案」App →「我的 iPhone/iPad」→ `下載項目`（可在 Safari 設定改為 iCloud 雲碟） |
+
+若瀏覽器有開啟「每次下載都詢問儲存位置」，則會跳出對話框由你自行指定資料夾。下載完成後也可從瀏覽器的下載清單（Chrome/Edge 為 `Ctrl+J`）點選「顯示於資料夾」直接定位檔案。
+
+檔名格式如下，其中日期為匯出時所選的區間，未選則為「全部」：
+
+- `心晴日記_<開始日期>_<結束日期>.csv`
+- `心晴日記_<開始日期>_<結束日期>.json`
+
+例如 `心晴日記_2026-08-01_2026-08-24.csv`、`心晴日記_全部_全部.json`。
+
+選擇匯出到 Google Drive 時則不會下載到本機，檔案會直接寫入雲端硬碟，位置與檔名請見下一節。
+
 ## Google Drive 備份
 
 Google Drive 功能使用純前端的 Google Identity Services token model，不使用 Client Secret。OAuth access token 只會暫存在頁面記憶體中，不會寫入 `localStorage`。
