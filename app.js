@@ -10,10 +10,10 @@ const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3";
 const GOOGLE_DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const GOOGLE_DRIVE_BACKUP_FOLDER = "心晴日記備份";
+const WEATHER_REQUEST_TIMEOUT_MS = 12000;
 
 const state = {
   weather: null,
-  position: null,
   selectedMood: null,
   entries: readEntries(),
   dateRange: createDateRangeState(),
@@ -59,6 +59,37 @@ const weatherLabels = {
   "light rain": "小雨",
   "moderate rain": "中雨",
   "heavy intensity rain": "大雨",
+};
+
+const weatherCodes = {
+  0: { condition: "Clear", description: "晴朗" },
+  1: { condition: "Clear", description: "晴時多雲" },
+  2: { condition: "Clouds", description: "多雲" },
+  3: { condition: "Clouds", description: "陰天" },
+  45: { condition: "Fog", description: "霧" },
+  48: { condition: "Fog", description: "霧淞" },
+  51: { condition: "Drizzle", description: "小毛毛雨" },
+  53: { condition: "Drizzle", description: "毛毛雨" },
+  55: { condition: "Drizzle", description: "大毛毛雨" },
+  56: { condition: "Drizzle", description: "小凍毛毛雨" },
+  57: { condition: "Drizzle", description: "凍毛毛雨" },
+  61: { condition: "Rain", description: "小雨" },
+  63: { condition: "Rain", description: "中雨" },
+  65: { condition: "Rain", description: "大雨" },
+  66: { condition: "Rain", description: "小凍雨" },
+  67: { condition: "Rain", description: "凍雨" },
+  71: { condition: "Snow", description: "小雪" },
+  73: { condition: "Snow", description: "中雪" },
+  75: { condition: "Snow", description: "大雪" },
+  77: { condition: "Snow", description: "雪粒" },
+  80: { condition: "Rain", description: "小陣雨" },
+  81: { condition: "Rain", description: "陣雨" },
+  82: { condition: "Rain", description: "強陣雨" },
+  85: { condition: "Snow", description: "小陣雪" },
+  86: { condition: "Snow", description: "強陣雪" },
+  95: { condition: "Thunderstorm", description: "雷雨" },
+  96: { condition: "Thunderstorm", description: "雷雨伴隨小冰雹" },
+  99: { condition: "Thunderstorm", description: "雷雨伴隨大冰雹" },
 };
 
 const moodLabels = { 1: "低落", 2: "不好", 3: "平靜", 4: "不錯", 5: "開心" };
@@ -194,14 +225,13 @@ async function requestLocationAndWeather() {
 
   navigator.geolocation.getCurrentPosition(
     ({ coords }) => {
-      state.position = { latitude: coords.latitude, longitude: coords.longitude };
       fetchWeather(coords.latitude, coords.longitude);
     },
     (error) => {
       const { message, showHelp } = describeGeolocationError(error);
       showWeatherError(message, { showHelp });
     },
-    { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 },
+    { enableHighAccuracy: false, timeout: WEATHER_REQUEST_TIMEOUT_MS, maximumAge: 300000 },
   );
 }
 
@@ -268,6 +298,8 @@ async function fetchWeather(latitude, longitude) {
     lat: latitude,
     lon: longitude,
   });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), WEATHER_REQUEST_TIMEOUT_MS);
 
   try {
     const response = await fetch(`/api/weather?${params}`, {
@@ -321,7 +353,6 @@ function setWeatherLoading() {
 
 function renderWeather() {
   const weather = state.weather;
-  $("#locationName").textContent = weather.location;
   $("#temperature").textContent = weather.temperature;
   $("#feelsLike").textContent = `${weather.feelsLike}°`;
   $("#humidity").textContent = `${weather.humidity}%`;
@@ -337,6 +368,9 @@ function showWeatherError(message, { showHelp = false } = {}) {
   setLocationHelpVisible(showHelp);
   $("#locationName").textContent = "無法取得天氣";
   $("#temperature").textContent = "--";
+  $("#feelsLike").textContent = "--°";
+  $("#humidity").textContent = "--%";
+  $("#pressure").textContent = "---- hPa";
   $("#weatherDescription").textContent = message;
   setWeatherSymbol("cloud", "is-error");
   $("#refreshWeather").disabled = false;
@@ -694,9 +728,11 @@ function formatLongDate(value) {
 function entryCard(entry) {
   const date = new Date(entry.createdAt);
   const weather = entry.weather;
-  const weatherText = weather
-    ? `${escapeHtml(weather.location)} · ${weather.temperature}°C · ${escapeHtml(weatherLabels[weather.description] || weather.description)}`
-    : "未記錄天氣";
+  const weatherParts = weather ? [
+    weather.temperature !== "" && weather.temperature != null ? `${escapeHtml(weather.temperature)}°C` : "",
+    weather.description ? escapeHtml(weatherLabels[weather.description] || weather.description) : "",
+  ].filter(Boolean) : [];
+  const weatherText = weatherParts.join(" · ") || "未記錄天氣";
   const note = entry.note ? escapeHtml(entry.note) : "沒有留下備註";
   const dateText = new Intl.DateTimeFormat("zh-TW", { month: "short", day: "numeric", weekday: "short" }).format(date);
   return `<article class="entry-card">
@@ -1024,12 +1060,16 @@ function parseCsvEntries(text) {
   const find = (...names) => headers.findIndex((header) => names.includes(header));
   const indexes = {
     localDate: find("日期", "date", "localdate"), mood: find("心情", "mood"), note: find("備註", "筆記", "note"),
-    location: find("地點", "location"), temperature: find("溫度°c", "temperature"), feelsLike: find("體感°c", "feelslike"),
+    location: find("地點", "location"), latitude: find("緯度", "latitude", "lat"), longitude: find("經度", "longitude", "lon", "lng"),
+    temperature: find("溫度°c", "temperature"), feelsLike: find("體感°c", "feelslike"),
     humidity: find("濕度%", "humidity"), pressure: find("氣壓hpa", "pressure"), description: find("天氣", "description"),
     longitude: find("經度", "longitude", "lon", "lng"), latitude: find("緯度", "latitude", "lat"),
   };
   return rows.slice(1).filter((row) => row.some((cell) => cell.trim())).map((row) => {
-    const value = (key, fallback) => row[indexes[key] >= 0 ? indexes[key] : fallback] ?? "";
+    const value = (key, fallback = -1) => {
+      const index = indexes[key] >= 0 ? indexes[key] : fallback;
+      return index >= 0 ? row[index] ?? "" : "";
+    };
     return { localDate: value("localDate", 0), mood: value("mood", 1), note: value("note", 2), weather: {
       location: value("location", 3), temperature: value("temperature", 4), feelsLike: value("feelsLike", 5),
       humidity: value("humidity", 6), pressure: value("pressure", 7), description: value("description", 8),
@@ -1062,6 +1102,7 @@ function normalizeImportedEntry(entry) {
   const moodButton = $$(".mood-option").find((button) => Number(button.dataset.mood) === mood);
   const hasWeather = entry.weather && Object.values(entry.weather).some((value) => value !== "");
   const weather = hasWeather ? { ...entry.weather,
+    latitude: numberOrValue(entry.weather.latitude), longitude: numberOrValue(entry.weather.longitude),
     temperature: numberOrValue(entry.weather.temperature), feelsLike: numberOrValue(entry.weather.feelsLike),
     humidity: numberOrValue(entry.weather.humidity), pressure: numberOrValue(entry.weather.pressure),
     longitude: coordinateOrNull(entry.weather.longitude), latitude: coordinateOrNull(entry.weather.latitude),
