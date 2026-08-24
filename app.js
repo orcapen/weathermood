@@ -91,6 +91,7 @@ function init() {
   loadTodayEntry();
   registerServiceWorker();
 
+  watchGeolocationPermission();
   requestLocationAndWeather();
 }
 
@@ -142,10 +143,49 @@ function route() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function requestLocationAndWeather() {
+const GEOLOCATION_ERROR = { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 };
+
+const LOCATION_DENIED_MESSAGE = "位置權限已被封鎖，無法取得天氣。請依下方步驟開啟定位權限。";
+
+const locationHelpGuides = {
+  ios: {
+    title: "在 iPhone / iPad 開啟定位權限",
+    steps: [
+      "開啟「設定 → 隱私權與安全性 → 定位服務」，確認定位服務已開啟。",
+      "在同一頁往下找到使用的瀏覽器（Safari 網站、Chrome…），選擇「使用 App 期間」。",
+      "使用 Safari 時，再到「設定 → Safari → 位置」選擇「詢問」或「允許」。",
+      "回到本頁點「重新整理天氣」。",
+    ],
+  },
+  android: {
+    title: "在 Android 開啟定位權限",
+    steps: [
+      "下拉快捷設定列，確認「定位」已開啟。",
+      "點網址列左側的鎖頭或設定圖示 →「權限」→ 將「位置資訊」改為允許。",
+      "若找不到該選項，可到「設定 → 應用程式 → 你的瀏覽器 → 權限 → 位置資訊」開啟。",
+      "回到本頁點「重新整理天氣」。",
+    ],
+  },
+  desktop: {
+    title: "在電腦瀏覽器開啟定位權限",
+    steps: [
+      "點網址列左側的鎖頭或資訊圖示，開啟本網站的權限設定。",
+      "將「位置」改為「允許」。",
+      "macOS 使用者請另外確認「系統設定 → 隱私權與安全性 → 定位服務」已允許該瀏覽器。",
+      "重新載入頁面，或點「重新整理天氣」。",
+    ],
+  },
+};
+
+async function requestLocationAndWeather() {
   setWeatherLoading();
   if (!navigator.geolocation) {
     showWeatherError("此瀏覽器不支援定位，無法使用天氣功能。");
+    return;
+  }
+
+  if (await readGeolocationPermission() === "denied") {
+    showWeatherError(LOCATION_DENIED_MESSAGE, { showHelp: true });
     return;
   }
 
@@ -155,13 +195,69 @@ function requestLocationAndWeather() {
       fetchWeather(coords.latitude, coords.longitude);
     },
     (error) => {
-      const message = error.code === 1
-        ? "需要位置權限才能使用。請在瀏覽器設定中允許定位後重試。"
-        : "目前無法取得位置，請稍後再試。";
-      showWeatherError(message);
+      const { message, showHelp } = describeGeolocationError(error);
+      showWeatherError(message, { showHelp });
     },
     { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 },
   );
+}
+
+function describeGeolocationError(error) {
+  switch (error.code) {
+    case GEOLOCATION_ERROR.PERMISSION_DENIED:
+      return { message: LOCATION_DENIED_MESSAGE, showHelp: true };
+    case GEOLOCATION_ERROR.POSITION_UNAVAILABLE:
+      return { message: "定位服務目前無法回報位置。請確認裝置的定位功能已開啟後重試。", showHelp: true };
+    case GEOLOCATION_ERROR.TIMEOUT:
+      return { message: "定位逾時，請確認網路與定位訊號後再試一次。", showHelp: false };
+    default:
+      return { message: "目前無法取得位置，請稍後再試。", showHelp: false };
+  }
+}
+
+async function readGeolocationPermission() {
+  if (!navigator.permissions?.query) return "unknown";
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state;
+  } catch {
+    // 部分瀏覽器不支援查詢定位權限，改由實際定位結果判斷。
+    return "unknown";
+  }
+}
+
+async function watchGeolocationPermission() {
+  if (!navigator.permissions?.query) return;
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    status.addEventListener("change", () => {
+      if (status.state === "granted" && !state.weather) requestLocationAndWeather();
+    });
+  } catch {
+    // 無法監聽權限變化時，使用者仍可手動點「重新整理天氣」。
+  }
+}
+
+function setLocationHelpVisible(visible) {
+  if (visible) {
+    const guide = locationHelpGuides[detectPlatform()];
+    $("#locationHelpTitle").textContent = guide.title;
+    $("#locationHelpSteps").replaceChildren(...guide.steps.map((step) => {
+      const item = document.createElement("li");
+      item.textContent = step;
+      return item;
+    }));
+  }
+  $("#locationHelp").hidden = !visible;
+}
+
+function detectPlatform() {
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS) return "ios";
+  if (/Android/.test(ua)) return "android";
+  return "desktop";
 }
 
 async function fetchWeather(latitude, longitude) {
@@ -213,6 +309,7 @@ async function fetchWeather(latitude, longitude) {
 
 function setWeatherLoading() {
   setEntryAvailability(false);
+  setLocationHelpVisible(false);
   $("#locationName").textContent = "正在取得位置…";
   $("#weatherDescription").textContent = "正在讀取天氣";
   setWeatherSymbol("cloud", "is-loading");
@@ -232,8 +329,9 @@ function renderWeather() {
   setEntryAvailability(true);
 }
 
-function showWeatherError(message) {
+function showWeatherError(message, { showHelp = false } = {}) {
   state.weather = null;
+  setLocationHelpVisible(showHelp);
   $("#locationName").textContent = "無法取得天氣";
   $("#temperature").textContent = "--";
   $("#weatherDescription").textContent = message;

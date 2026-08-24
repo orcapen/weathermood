@@ -79,6 +79,9 @@ h2 { margin-bottom: 6px; font-family: "Iansui", "PingFang TC", "Microsoft JhengH
 .weather-details div:first-child { padding-left: 0; }
 .weather-details div:last-child { border: 0; padding-right: 0; }
 .weather-details span { color: var(--muted); }
+.location-help { margin-top: 20px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: rgb(255 255 255 / 62%); }
+.location-help-title { margin: 0 0 8px; font-size: .88rem; font-weight: 700; }
+.location-help-steps { margin: 0; padding-left: 20px; color: var(--muted); font-size: .84rem; line-height: 1.7; }
 .refresh-button { margin-top: 18px; }
 .text-button { padding: 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--accent-dark); font-size: .86rem; cursor: pointer; }
 .entry-section, .today-section { padding: 80px 0 12px; }
