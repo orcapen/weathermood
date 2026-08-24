@@ -123,16 +123,6 @@
               <h1 id="historyTitle">所有日記</h1>
               <p id="historySummary">每一天，都是值得收藏的天氣。</p>
             </div>
-            <div class="data-actions">
-              <button class="secondary-button" id="openImport" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0 4 4m-4-4L8 7M5 17v3h14v-3"/></svg>
-                匯入資料
-              </button>
-              <button class="secondary-button" id="openExport" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
-                匯出資料
-              </button>
-            </div>
           </div>
           <div class="history-controls">
             <label>心情篩選
@@ -159,6 +149,37 @@
           </div>
           <div class="history-list" id="historyList"></div>
         </section>
+
+        <section class="view" id="settingsView" aria-labelledby="settingsTitle" hidden>
+          <div class="settings-header">
+            <p class="eyebrow">打理你的日記</p>
+            <h1 id="settingsTitle">設定</h1>
+            <p>管理資料備份與顯示偏好。</p>
+          </div>
+
+          <section class="settings-group" aria-labelledby="dataSettingsTitle">
+            <h2 id="dataSettingsTitle">資料管理</h2>
+            <p class="settings-description">匯出備份你的日記，或從備份檔帶回你的回憶。</p>
+            <div class="data-actions">
+              <button class="secondary-button" id="openImport" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0 4 4m-4-4L8 7M5 17v3h14v-3"/></svg>
+                匯入資料
+              </button>
+              <button class="secondary-button" id="openExport" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+                匯出資料
+              </button>
+            </div>
+          </section>
+
+          <section class="settings-group" aria-labelledby="displaySettingsTitle">
+            <h2 id="displaySettingsTitle">顯示</h2>
+            <label class="settings-toggle" for="hideHintsToggle">
+              <input type="checkbox" id="hideHintsToggle" />
+              <span>隱藏使用說明與警語<small>隱藏測試版警語、資料儲存說明與「一天一筆紀錄」的提示文字。</small></span>
+            </label>
+          </section>
+        </section>
       </main>
 
       <nav class="bottom-nav" aria-label="主要導覽">
@@ -167,6 +188,9 @@
         </a>
         <a href="#history" class="nav-item" data-view="history">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h4"/></svg><span>日記</span>
+        </a>
+        <a href="#settings" class="nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>設定</span>
         </a>
       </nav>
     </div>

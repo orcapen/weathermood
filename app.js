@@ -1,5 +1,6 @@
 const STORAGE = {
   entries: "weathermood.entries",
+  hideHints: "weathermood.hideHints",
 };
 
 const GOOGLE_CLIENT_ID = "918181579161-bkgjjebb00asi87i8p16lojja03u59h0.apps.googleusercontent.com";
@@ -109,6 +110,7 @@ function init() {
   }).format(new Date());
 
   migrateStoredMoods();
+  initHideHints();
   bindEvents();
   route();
   renderEntries();
@@ -153,14 +155,29 @@ function bindEvents() {
   $("#confirmDateRange").addEventListener("click", confirmDateRange);
   $("#todayList").addEventListener("click", handleDelete);
   $("#historyList").addEventListener("click", handleDelete);
+  $("#hideHintsToggle").addEventListener("change", (event) => {
+    localStorage.setItem(STORAGE.hideHints, event.target.checked ? "1" : "0");
+    applyHideHints(event.target.checked);
+  });
+}
+
+function initHideHints() {
+  const hidden = localStorage.getItem(STORAGE.hideHints) === "1";
+  $("#hideHintsToggle").checked = hidden;
+  applyHideHints(hidden);
+}
+
+function applyHideHints(hidden) {
+  document.body.classList.toggle("hide-hints", hidden);
 }
 
 function route() {
-  const view = location.hash === "#history" ? "history" : "home";
-  $("#homeView").hidden = view !== "home";
-  $("#historyView").hidden = view !== "history";
-  $("#homeView").classList.toggle("active", view === "home");
-  $("#historyView").classList.toggle("active", view === "history");
+  const view = location.hash === "#history" ? "history" : location.hash === "#settings" ? "settings" : "home";
+  ["home", "history", "settings"].forEach((name) => {
+    const section = $(`#${name}View`);
+    section.hidden = view !== name;
+    section.classList.toggle("active", view === name);
+  });
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   if (view === "history") renderHistory();
   window.scrollTo({ top: 0, behavior: "smooth" });
