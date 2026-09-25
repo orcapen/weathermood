@@ -4,10 +4,11 @@
 
 ## 功能
 
-- 使用瀏覽器定位與 [Open-Meteo](https://open-meteo.com/) 顯示目前天氣，不需 API key
-- 記錄心情、備註、座標與當下天氣，資料保存在瀏覽器 `localStorage`
+- 使用瀏覽器定位與 [Open-Meteo](https://open-meteo.com/) 顯示當天天氣，不需 API key
+- 記錄心情、備註、座標與當天天氣，資料保存在瀏覽器 `localStorage`
 - 一天保留一筆紀錄，同日再次儲存會更新原本內容
 - 首頁顯示當日紀錄，日記頁顯示所有卡片
+- 可指定日期區間，以折線圖查看每日心情分數與區間摘要
 - 依心情篩選，並可選日期區間匯出 UTF-8 CSV 或 JSON
 - 使用 Google Identity Services 將可見的 JSON 備份匯出至 Google Drive，或從 Drive 匯入
 - Service Worker 快取 App Shell，支援安裝與離線開啟
@@ -20,7 +21,7 @@ PWA、定位與 Service Worker 需要安全來源，請勿直接以 `file://` �
 uv run python -m http.server 5500
 ```
 
-開啟 `http://localhost:5500` 後，允許瀏覽器取得位置即可使用。緯度與經度會用來查詢當下天氣並保存於日記，匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標；應用程式不會解析或顯示地名。
+開啟 `http://localhost:5500` 後，允許瀏覽器取得位置即可使用。緯度與經度會用來查詢當天天氣並保存於日記，匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標；應用程式不會解析或顯示地名。
 
 ## 匯出檔案存放位置
 
@@ -68,7 +69,7 @@ Google Cloud 專案需完成以下設定：
 
 ## 資料與隱私
 
-日記只保存在目前瀏覽器的 `localStorage`，不會傳送到自建後端。瀏覽器取得的緯度與經度會直接傳送至 Open-Meteo 查詢天氣，並與當下天氣一起寫入日記；匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標。
+日記只保存在目前瀏覽器的 `localStorage`，不會傳送到自建後端。瀏覽器取得的緯度與經度會直接傳送至 Open-Meteo 查詢天氣，並與當天天氣一起寫入日記；匯出 CSV、JSON 或備份至 Google Drive 時也會包含座標。
 
 天氣資料由 [Open-Meteo](https://open-meteo.com/) 提供。
 

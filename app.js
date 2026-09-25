@@ -15,6 +15,7 @@ const state = {
   selectedMood: null,
   entries: readEntries(),
   dateRange: createDateRangeState(),
+  trendDateRange: createDateRangeState(),
   exportDateRange: createDateRangeState(),
   dateRangeContext: "history",
   googleAccessToken: "",
@@ -144,6 +145,7 @@ function bindEvents() {
   $("#exportForm").addEventListener("submit", exportData);
   $("#moodFilter").addEventListener("change", renderHistory);
   $("#openDateRange").addEventListener("click", () => openDateRangePicker("history"));
+  $("#openTrendDateRange").addEventListener("click", () => openDateRangePicker("trend"));
   $("#openExportDateRange").addEventListener("click", () => openDateRangePicker("export"));
   $("#closeDateRange").addEventListener("click", () => $("#dateRangeDialog").close());
   $("#previousMonth").addEventListener("click", () => changeCalendarMonth(-1));
@@ -172,14 +174,16 @@ function applyHideHints(hidden) {
 }
 
 function route() {
-  const view = location.hash === "#history" ? "history" : location.hash === "#settings" ? "settings" : "home";
-  ["home", "history", "settings"].forEach((name) => {
+  const routes = { "#history": "history", "#trends": "trends", "#settings": "settings" };
+  const view = routes[location.hash] || "home";
+  ["home", "history", "trends", "settings"].forEach((name) => {
     const section = $(`#${name}View`);
     section.hidden = view !== name;
     section.classList.toggle("active", view === name);
   });
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   if (view === "history") renderHistory();
+  if (view === "trends") renderTrend();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -208,7 +212,9 @@ async function fetchWeather(latitude, longitude) {
   const params = new URLSearchParams({
     latitude,
     longitude,
-    current: "temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,weather_code",
+    daily: "weather_code,temperature_2m_mean,apparent_temperature_mean,relative_humidity_2m_mean,pressure_msl_mean",
+    timezone: "auto",
+    forecast_days: "1",
   });
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), WEATHER_REQUEST_TIMEOUT_MS);
@@ -219,18 +225,18 @@ async function fetchWeather(latitude, longitude) {
       throw new Error("天氣服務暫時無法回應，請稍後再試。");
     }
     const data = await response.json();
-    const current = data.current;
-    const values = [
-      current?.temperature_2m,
-      current?.apparent_temperature,
-      current?.relative_humidity_2m,
-      current?.pressure_msl,
-      current?.weather_code,
-    ];
-    if (!values.every(Number.isFinite)) {
+    const daily = data.daily;
+    const values = {
+      temperature: daily?.temperature_2m_mean?.[0],
+      feelsLike: daily?.apparent_temperature_mean?.[0],
+      humidity: daily?.relative_humidity_2m_mean?.[0],
+      pressure: daily?.pressure_msl_mean?.[0],
+      weatherCode: daily?.weather_code?.[0],
+    };
+    if (!Object.values(values).every(Number.isFinite)) {
       throw new Error("天氣資料格式不完整，請稍後再試。");
     }
-    const weather = weatherCodes[current.weather_code] || {
+    const weather = weatherCodes[values.weatherCode] || {
       condition: "Clouds",
       description: "天氣狀況未知",
     };
@@ -238,10 +244,10 @@ async function fetchWeather(latitude, longitude) {
       location: "",
       latitude,
       longitude,
-      temperature: Math.round(current.temperature_2m),
-      feelsLike: Math.round(current.apparent_temperature),
-      humidity: current.relative_humidity_2m,
-      pressure: Math.round(current.pressure_msl),
+      temperature: Math.round(values.temperature),
+      feelsLike: Math.round(values.feelsLike),
+      humidity: Math.round(values.humidity),
+      pressure: Math.round(values.pressure),
       condition: weather.condition,
       description: weather.description,
     };
@@ -258,7 +264,7 @@ async function fetchWeather(latitude, longitude) {
 
 function setWeatherLoading() {
   setEntryAvailability(false);
-  $("#weatherDescription").textContent = "正在讀取天氣";
+  $("#weatherDescription").textContent = "正在讀取今日天氣";
   setWeatherSymbol("cloud", "is-loading");
   $("#refreshWeather").disabled = true;
 }
@@ -269,7 +275,7 @@ function renderWeather() {
   $("#feelsLike").textContent = `${weather.feelsLike}°`;
   $("#humidity").textContent = `${weather.humidity}%`;
   $("#pressure").textContent = `${weather.pressure} hPa`;
-  $("#weatherDescription").textContent = weatherLabels[weather.description] || weather.description;
+  $("#weatherDescription").textContent = `今日 · ${weatherLabels[weather.description] || weather.description}`;
   setWeatherSymbol(weatherSymbols[weather.condition] || "cloud");
   $("#refreshWeather").disabled = false;
   setEntryAvailability(true);
@@ -395,6 +401,7 @@ function renderEntries() {
   $("#todayCount").textContent = `${entries.length} 則`;
   $("#todayList").innerHTML = entries.map(entryCard).join("");
   renderHistory();
+  renderTrend();
 }
 
 function renderHistory() {
@@ -414,6 +421,114 @@ function renderHistory() {
     : "每一天，都是值得收藏的天氣。";
 }
 
+function renderTrend() {
+  const { appliedStart, appliedEnd } = state.trendDateRange;
+  const groupedScores = new Map();
+
+  state.entries.forEach((entry) => {
+    const score = moodScore(entry.mood);
+    const date = entry.localDate;
+    if (!score || !date) return;
+    if (appliedStart && date < appliedStart) return;
+    if (appliedEnd && date > appliedEnd) return;
+    const scores = groupedScores.get(date) || [];
+    scores.push(score);
+    groupedScores.set(date, scores);
+  });
+
+  const points = [...groupedScores.entries()]
+    .map(([date, scores]) => ({
+      date,
+      score: scores.reduce((total, score) => total + score, 0) / scores.length,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const chart = $("#trendChart");
+  const empty = $("#emptyTrend");
+  const stats = $("#trendStats");
+  const hasPoints = points.length > 0;
+  chart.hidden = !hasPoints;
+  empty.hidden = hasPoints;
+  stats.hidden = !hasPoints;
+
+  $("#trendPeriod").textContent = appliedStart && appliedEnd
+    ? `${formatShortDate(appliedStart)} – ${formatShortDate(appliedEnd)}`
+    : "全部日期";
+
+  if (!hasPoints) {
+    chart.innerHTML = "";
+    $("#trendAverage").textContent = "—";
+    $("#trendEntryCount").textContent = "0 天";
+    $("#trendHighest").textContent = "—";
+    return;
+  }
+
+  const average = points.reduce((total, point) => total + point.score, 0) / points.length;
+  const highest = Math.max(...points.map((point) => point.score));
+  $("#trendAverage").textContent = `${average.toFixed(1)} / 5`;
+  $("#trendEntryCount").textContent = `${points.length} 天`;
+  $("#trendHighest").textContent = `${highest.toFixed(1)} · ${moodLabel(Math.round(highest))}`;
+
+  const width = 820;
+  const height = 330;
+  const margin = { top: 22, right: 24, bottom: 52, left: 70 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const firstDate = appliedStart || points[0].date;
+  const lastDate = appliedEnd || points.at(-1).date;
+  const spanDays = Math.max(0, inclusiveDays(firstDate, lastDate) - 1);
+  const dayOffset = (date) => Math.round((parseLocalDate(date) - parseLocalDate(firstDate)) / 86400000);
+  const x = (date) => spanDays
+    ? margin.left + (dayOffset(date) / spanDays) * plotWidth
+    : margin.left + plotWidth / 2;
+  const y = (score) => margin.top + ((5 - score) / 4) * plotHeight;
+  const coordinates = points.map((point) => `${x(point.date).toFixed(1)},${y(point.score).toFixed(1)}`).join(" ");
+  const lineStartX = x(points[0].date).toFixed(1);
+  const lineEndX = x(points.at(-1).date).toFixed(1);
+  const baseline = margin.top + plotHeight;
+
+  const gridLines = [5, 4, 3, 2, 1].map((score) => `
+    <g aria-hidden="true">
+      <line class="chart-grid-line" x1="${margin.left}" y1="${y(score)}" x2="${width - margin.right}" y2="${y(score)}"></line>
+      <text class="chart-axis-label" x="${margin.left - 14}" y="${y(score) + 4}" text-anchor="end">${score} ${moodLabels[score]}</text>
+    </g>`).join("");
+
+  const tickCount = spanDays === 0 ? 1 : Math.min(6, spanDays + 1);
+  const tickDates = [...new Set(Array.from({ length: tickCount }, (_, index) => {
+    const offset = tickCount === 1 ? 0 : Math.round((spanDays * index) / (tickCount - 1));
+    const date = parseLocalDate(firstDate);
+    date.setDate(date.getDate() + offset);
+    return toLocalDate(date);
+  }))];
+  const xLabels = tickDates.map((date) => `
+    <g aria-hidden="true">
+      <line class="chart-grid-line chart-tick" x1="${x(date)}" y1="${baseline}" x2="${x(date)}" y2="${baseline + 7}"></line>
+      <text class="chart-axis-label" x="${x(date)}" y="${height - 18}" text-anchor="middle">${formatShortDate(date)}</text>
+    </g>`).join("");
+
+  const circles = points.map((point) => {
+    const label = `${formatLongDate(point.date)}，${point.score.toFixed(1)} 分，${moodLabel(Math.round(point.score))}`;
+    return `<circle class="chart-point" cx="${x(point.date).toFixed(1)}" cy="${y(point.score).toFixed(1)}" r="6" tabindex="0" role="img" aria-label="${label}"><title>${label}</title></circle>`;
+  }).join("");
+  const description = `${formatLongDate(firstDate)}至${formatLongDate(lastDate)}，共有 ${points.length} 天紀錄，平均心情 ${average.toFixed(1)} 分。`;
+
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="group" aria-labelledby="trendSvgTitle trendSvgDescription">
+    <title id="trendSvgTitle">心情趨勢折線圖</title>
+    <desc id="trendSvgDescription">${description}</desc>
+    <defs>
+      <linearGradient id="moodAreaGradient" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e46b45" stop-opacity="0.24"></stop>
+        <stop offset="100%" stop-color="#e46b45" stop-opacity="0.02"></stop>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    ${xLabels}
+    <polygon class="chart-area" points="${lineStartX},${baseline} ${coordinates} ${lineEndX},${baseline}" aria-hidden="true"></polygon>
+    <polyline class="chart-line" points="${coordinates}" aria-hidden="true"></polyline>
+    ${circles}
+  </svg>`;
+}
+
 function createDateRangeState() {
   return {
     start: "", end: "", appliedStart: "", appliedEnd: "", selecting: "start",
@@ -422,7 +537,9 @@ function createDateRangeState() {
 }
 
 function activeDateRange() {
-  return state.dateRangeContext === "export" ? state.exportDateRange : state.dateRange;
+  if (state.dateRangeContext === "export") return state.exportDateRange;
+  if (state.dateRangeContext === "trend") return state.trendDateRange;
+  return state.dateRange;
 }
 
 function openDateRangePicker(context) {
@@ -431,7 +548,8 @@ function openDateRangePicker(context) {
   const anchor = range.start || range.appliedStart || toLocalDate(new Date());
   range.viewDate = parseLocalDate(anchor);
   range.viewDate.setDate(1);
-  $("#dateRangeTitle").textContent = context === "export" ? "選擇匯出日期區間" : "選擇日期區間";
+  const titles = { export: "選擇匯出日期區間", trend: "選擇圖表日期區間" };
+  $("#dateRangeTitle").textContent = titles[context] || "選擇日期區間";
   renderDateRangePicker();
   $("#dateRangeDialog").showModal();
   requestAnimationFrame(() => {
@@ -510,13 +628,20 @@ function updateDateSelection() {
 }
 
 function updateAppliedDateRange(context = state.dateRangeContext) {
-  const range = context === "export" ? state.exportDateRange : state.dateRange;
+  const range = context === "export" ? state.exportDateRange
+    : context === "trend" ? state.trendDateRange
+      : state.dateRange;
   const { appliedStart, appliedEnd } = range;
-  const label = context === "export" ? $("#exportDateRangeLabel") : $("#dateRangeLabel");
-  const summary = context === "export" ? $("#exportDateRangeSummary") : $("#dateRangeSummary");
+  const controls = context === "export"
+    ? { label: $("#exportDateRangeLabel"), summary: $("#exportDateRangeSummary") }
+    : context === "trend"
+      ? { label: $("#trendDateRangeLabel"), summary: $("#trendDateRangeSummary") }
+      : { label: $("#dateRangeLabel"), summary: $("#dateRangeSummary") };
+  const { label, summary } = controls;
   if (!appliedStart || !appliedEnd) {
     label.textContent = context === "export" ? "全部日期" : "選擇日期區間";
-    summary.textContent = context === "export" ? "未選擇區間時將匯出全部紀錄。" : "";
+    summary.textContent = context === "export" ? "未選擇區間時將匯出全部紀錄。"
+      : context === "trend" ? "尚未選擇時顯示全部紀錄。" : "";
     return;
   }
   const duration = inclusiveDays(appliedStart, appliedEnd);
@@ -542,6 +667,7 @@ function clearDateRange() {
   range.appliedEnd = "";
   updateAppliedDateRange();
   if (state.dateRangeContext === "history") renderHistory();
+  if (state.dateRangeContext === "trend") renderTrend();
 }
 
 function confirmDateRange() {
@@ -551,8 +677,12 @@ function confirmDateRange() {
   range.appliedEnd = range.end;
   updateAppliedDateRange();
   if (state.dateRangeContext === "history") renderHistory();
+  if (state.dateRangeContext === "trend") renderTrend();
   $("#dateRangeDialog").close();
-  $(state.dateRangeContext === "export" ? "#openExportDateRange" : "#openDateRange").focus();
+  const trigger = state.dateRangeContext === "export" ? "#openExportDateRange"
+    : state.dateRangeContext === "trend" ? "#openTrendDateRange"
+      : "#openDateRange";
+  $(trigger).focus();
 }
 
 function changeCalendarMonth(offset, focusDay = 1) {

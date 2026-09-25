@@ -36,14 +36,14 @@
           <div class="hero-copy">
             <p class="eyebrow" id="todayDate">今天</p>
             <h1 id="homeTitle">今天，感覺如何？</h1>
-            <p>把此刻的天氣與心情，一起收進日記裡。</p>
+            <p>把今天的天氣與心情，一起收進日記裡。</p>
           </div>
 
           <section class="weather-card" id="weatherCard" aria-live="polite">
             <div class="weather-main">
               <div>
                 <div class="temperature"><strong id="temperature">--</strong><span>°C</span></div>
-                <p class="weather-description" id="weatherDescription">正在讀取天氣</p>
+                <p class="weather-description" id="weatherDescription">正在讀取今日天氣</p>
               </div>
               <img
                 class="weather-symbol is-loading"
@@ -56,9 +56,9 @@
               />
             </div>
             <div class="weather-details">
-              <div><span>體感</span><strong id="feelsLike">--°</strong></div>
-              <div><span>濕度</span><strong id="humidity">--%</strong></div>
-              <div><span>氣壓</span><strong id="pressure">---- hPa</strong></div>
+              <div><span>平均體感</span><strong id="feelsLike">--°</strong></div>
+              <div><span>平均濕度</span><strong id="humidity">--%</strong></div>
+              <div><span>平均氣壓</span><strong id="pressure">---- hPa</strong></div>
             </div>
             <div class="weather-actions">
               <button class="text-button" id="refreshWeather" type="button">重新整理天氣</button>
@@ -150,6 +150,48 @@
           <div class="history-list" id="historyList"></div>
         </section>
 
+        <section class="view" id="trendsView" aria-labelledby="trendsTitle" hidden>
+          <div class="history-header trends-header">
+            <div>
+              <p class="eyebrow">看見心情的變化</p>
+              <h1 id="trendsTitle">心情趨勢</h1>
+              <p>選一段時間，看看每天的心情如何起伏。</p>
+            </div>
+          </div>
+
+          <div class="trend-controls">
+            <div class="date-filter-control">
+              <span>圖表日期區間</span>
+              <button class="date-range-trigger" id="openTrendDateRange" type="button" aria-haspopup="dialog">
+                <span id="trendDateRangeLabel">選擇日期區間</span>
+                <span aria-hidden="true">▾</span>
+              </button>
+              <p class="date-range-summary" id="trendDateRangeSummary" aria-live="polite">尚未選擇時顯示全部紀錄。</p>
+            </div>
+          </div>
+
+          <section class="trend-card" aria-labelledby="trendChartTitle">
+            <div class="trend-card-heading">
+              <div>
+                <p class="eyebrow">每日心情分數</p>
+                <h2 id="trendChartTitle">心情折線圖</h2>
+              </div>
+              <p id="trendPeriod">全部日期</p>
+            </div>
+
+            <div class="trend-stats" id="trendStats">
+              <div><span>平均心情</span><strong id="trendAverage">—</strong></div>
+              <div><span>記錄天數</span><strong id="trendEntryCount">0 天</strong></div>
+              <div><span>最高心情</span><strong id="trendHighest">—</strong></div>
+            </div>
+
+            <div class="trend-chart" id="trendChart"></div>
+            <div class="empty-state trend-empty" id="emptyTrend" hidden>
+              <span>〰️</span><h2>這段時間還沒有紀錄</h2><p>換一個日期區間，或先回首頁記下今天的心情。</p>
+            </div>
+          </section>
+        </section>
+
         <section class="view" id="settingsView" aria-labelledby="settingsTitle" hidden>
           <div class="settings-header">
             <p class="eyebrow">打理你的日記</p>
@@ -188,6 +230,9 @@
         </a>
         <a href="#history" class="nav-item" data-view="history">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h4"/></svg><span>日記</span>
+        </a>
+        <a href="#trends" class="nav-item" data-view="trends">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 17 5-5 4 3 7-8"/><path d="M16 7h4v4"/></svg><span>趨勢</span>
         </a>
         <a href="#settings" class="nav-item" data-view="settings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>設定</span>

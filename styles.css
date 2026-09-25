@@ -19,6 +19,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
@@ -134,6 +135,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .entry-meta { color: var(--muted); font-size: .78rem; text-align: right; }
 .delete-button { margin-top: 6px; border: 0; background: transparent; color: #9b5544; font-size: .78rem; cursor: pointer; }
 .history-header { display: flex; justify-content: space-between; gap: 24px; align-items: end; padding: 58px 0 34px; border-bottom: 1px solid var(--line); }
+.trends-header > div > p:last-child { color: var(--muted); }
 .history-controls { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; align-items: flex-start; padding: 24px 0; }
 .history-controls label { color: var(--muted); font-size: .8rem; }
 .history-controls select { display: block; margin-top: 6px; padding: 9px 34px 9px 12px; }
@@ -149,7 +151,25 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); box-sha
 .empty-state { padding: 90px 20px; color: var(--muted); text-align: center; }
 .empty-state > span { display: block; margin-bottom: 10px; font-size: 3rem; }
 .empty-state h2 { color: var(--ink); }
-.bottom-nav { position: fixed; z-index: 20; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: min(400px, calc(100% - 40px)); padding: 6px; border: 1px solid rgb(37 36 31 / 10%); border-radius: 18px; background: rgb(255 254 250 / 92%); box-shadow: 0 10px 35px rgb(51 45 34 / 17%); backdrop-filter: blur(18px); transform: translateX(-50%); }
+.trend-controls { display: flex; justify-content: flex-end; padding: 24px 0; }
+.trend-card { margin-bottom: 40px; padding: 30px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
+.trend-card-heading { display: flex; gap: 24px; justify-content: space-between; align-items: end; }
+.trend-card-heading h2 { margin-bottom: 0; }
+.trend-card-heading > p { margin-bottom: 3px; color: var(--muted); font-size: .86rem; }
+.trend-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 26px 0 18px; }
+.trend-stats div { padding: 15px 16px; border-radius: 14px; background: #f4f1ea; }
+.trend-stats span { display: block; margin-bottom: 4px; color: var(--muted); font-size: .76rem; }
+.trend-stats strong { font-size: 1.15rem; font-weight: 800; }
+.trend-chart { min-height: 330px; overflow-x: auto; }
+.trend-chart svg { display: block; width: 100%; min-width: 620px; height: auto; }
+.chart-grid-line { stroke: var(--line); stroke-width: 1; }
+.chart-axis-label { fill: var(--muted); font-family: "Iansui", "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: 12px; }
+.chart-area { fill: url(#moodAreaGradient); }
+.chart-line { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.chart-point { fill: var(--surface); stroke: var(--accent); stroke-width: 4; cursor: help; transition: .18s ease; }
+.chart-point:hover, .chart-point:focus { fill: var(--accent); stroke-width: 6; outline: none; }
+.trend-empty { padding: 54px 20px 46px; }
+.bottom-nav { position: fixed; z-index: 20; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: min(500px, calc(100% - 40px)); padding: 6px; border: 1px solid rgb(37 36 31 / 10%); border-radius: 18px; background: rgb(255 254 250 / 92%); box-shadow: 0 10px 35px rgb(51 45 34 / 17%); backdrop-filter: blur(18px); transform: translateX(-50%); }
 .nav-item { display: flex; gap: 8px; justify-content: center; align-items: center; padding: 10px 14px; border-radius: 12px; color: var(--muted); font-size: .86rem; font-weight: 700; text-decoration: none; }
 .nav-item svg { width: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .nav-item.active { background: var(--ink); color: white; }
@@ -233,6 +253,17 @@ body.hide-hints .beta-notice, body.hide-hints .entry-subtitle, body.hide-hints .
   .mood-grid { gap: 8px; }
   .mood-option { padding: 18px 8px 14px; }
   .history-header { display: block; }
+  .trend-controls { justify-content: stretch; }
+  .trend-controls .date-filter-control { width: 100%; }
+  .trend-card { padding: 22px 16px; border-radius: 20px; }
+  .trend-card-heading { display: block; }
+  .trend-card-heading > p { margin-top: 8px; }
+  .trend-stats { gap: 6px; }
+  .trend-stats div { padding: 12px 10px; }
+  .trend-stats strong { font-size: 1rem; }
+  .trend-chart { min-height: 270px; }
+  .bottom-nav { width: min(460px, calc(100% - 24px)); }
+  .nav-item { gap: 5px; padding-inline: 8px; font-size: .8rem; }
   .settings-header { padding-top: 34px; }
   .settings-group { padding: 22px 20px; }
   .settings-group .data-actions { flex-direction: column; }
